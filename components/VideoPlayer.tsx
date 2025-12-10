@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Channel, EPGData, EPGProgram, ChannelGroup, Category, GoalEvent, HighlightMatch } from '../types';
 import { DEFAULT_LOGO } from '../constants';
@@ -114,17 +113,37 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ channel, activeCategor
 
   // Goal Alert Polling
   const playNotificationSound = useCallback(() => {
-    // Short pop sound (base64)
-    const audio = new Audio("data:audio/wav;base64,UklGRl9vT1BXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU"); // Placeholder short silence/pop if valid wav provided.
-    // Using a real short pop sound base64
-    const popSound = "data:audio/mp3;base64,SUQzBAAAAAABAFRYWFgAAAASAAADbWFqb3JfYnJhbmQAbXA0MgBUWFhYAAAAEQAAA21pbm9yX3ZlcnNpb24AMABUWFhYAAAAHAAAA2NvbXBhdGlibGVfYnJhbmRzAGlzb21tcDQyAFRTU0UAAAAPAAADTGF2ZjU4LjQ1LjEwMAAAAAAAAAAAAAAA//uQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAJAAAB3gAZGSIjKCwwMzc6PD5BREhMTlFSVldZW15hYmVnamxtb3Jzdnl8foCChIWIi42QkpWXmpueoKGkpqmqrrGztri7vsHDxsnLzc/S1Nba3N/i5Ofq7O/x8/b4+fr9/v8AAAAATGF2YzU4LjkxLjEwMAAAAAAAAAAAAAAAACQCcAAABAAAAAd4S88qRAAAAAAAAAAAAAAAAAAAAAAA//uQZAAP8AAAaQAAAADgAAA0gAAAAABAAA0gAAAADxAAADSAAAAEVEVUxABqgVwHAAgIQAAS74AAAKBgQEAikIBAJ//8DAGDAgEAgEA//8D/gYA4D//4iFwO//4gHAAH///4QAA//uQZAA/8AAAaQAAAADgAAA0gAAAAABAAA0gAAAADxAAADSAAAAEVEVUxABqgVwHAAgIQAAS74AAAKBgQEAikIBAJ//8DAGDAgEAgEA//8D/gYA4D//4iFwO//4gHAAH///4QAA//uQZAA/8AAAaQAAAADgAAA0gAAAAABAAA0gAAAADxAAADSAAAAEVEVUxABqgVwHAAgIQAAS74AAAKBgQEAikIBAJ//8DAGDAgEAgEA//8D/gYA4D//4iFwO//4gHAAH///4QAA";
-    const snd = new Audio(popSound);
-    snd.volume = 0.5;
-    snd.play().catch(() => {});
+    try {
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        if (!AudioContextClass) return;
+
+        const ctx = new AudioContextClass();
+        const oscillator = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+
+        // 880Hz Sine Wave (A5 note)
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(880, ctx.currentTime);
+
+        // Volume Envelope: Start at 0.2 and drop to near zero quickly
+        gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+
+        // Connect nodes
+        oscillator.connect(gainNode);
+        gainNode.connect(ctx.destination);
+
+        // Play sound
+        oscillator.start();
+        oscillator.stop(ctx.currentTime + 0.5);
+    } catch (e) {
+        console.error("Failed to play notification sound", e);
+    }
   }, []);
 
   useEffect(() => {
-    if (!isGoalAlertEnabled || activeCategory !== Category.FOTBOLL) {
+    // Enable goal alerts for any category if enabled (supporting Kanaler as requested)
+    if (!isGoalAlertEnabled) {
         setGoalNotification(null);
         return;
     }
@@ -154,7 +173,23 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ channel, activeCategor
     // Poll every 60 seconds
     const interval = setInterval(poll, 60000);
     return () => clearInterval(interval);
-  }, [isGoalAlertEnabled, activeCategory, playNotificationSound]);
+  }, [isGoalAlertEnabled, playNotificationSound]);
+
+  const triggerTestNotification = useCallback(() => {
+    playNotificationSound();
+    setGoalNotification({
+        matchId: 'test-demo',
+        matchTitle: 'Test Match: Sweden vs Denmark',
+        score: '2 - 1',
+        scorer: 'Isak',
+        minute: '88\''
+    });
+
+    if (notificationTimeoutRef.current) clearTimeout(notificationTimeoutRef.current);
+    notificationTimeoutRef.current = setTimeout(() => {
+        setGoalNotification(null);
+    }, 8000);
+  }, [playNotificationSound]);
 
   // Refs for Event Listeners
   const channelRef = useRef(channel);
@@ -708,22 +743,43 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ channel, activeCategor
                <div className="flex items-center gap-4 mb-3">
                    <h1 className="text-4xl font-bold text-white">{channel.name}</h1>
                    
-                   {/* GOAL ALERT TOGGLE BUTTON */}
-                   {activeCategory === Category.FOTBOLL && (
-                       <div 
-                           className={`pointer-events-auto cursor-pointer p-2 rounded-full transition-all duration-300
-                           ${isGoalAlertEnabled 
-                               ? 'bg-green-600/20 text-green-400 ring-2 ring-green-500 shadow-[0_0_15px_rgba(34,197,94,0.3)] opacity-100' 
-                               : 'bg-white/5 text-gray-500 opacity-50 hover:opacity-100'
-                           }`}
-                           onClick={() => setIsGoalAlertEnabled(prev => !prev)}
-                           title="Toggle Live Goal Alerts"
-                       >
-                           <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
-                               <path d="M12,2C6.48,2,2,6.48,2,12s4.48,10,10,10s10-4.48,10-10S17.52,2,12,2z M12,20c-4.41,0-8-3.59-8-8s3.59-8,8-8s8,3.59,8,8 S16.41,20,12,20z M17,13h-4v4h-2v-4H7v-2h4V7h2v4h4V13z" opacity="0"/> 
-                               {/* Simple Soccer Ball Path */}
-                               <path d="M21.6 10.4c-.1-.7-.3-1.4-.5-2.1-.3-.6-.6-1.2-1-1.7-.4-.5-.9-1-1.4-1.5s-1-1-1.6-1.3c-.6-.4-1.2-.7-1.8-1C14.6 2.6 13.9 2.5 13.2 2.4c-.1 0-.1 0-.2 0h-2c-.7 0-1.4.2-2 .4-.7.3-1.3.6-1.9 1-.5.4-1.1.8-1.5 1.3-.5.5-1 1-1.3 1.6-.4.6-.7 1.2-1 1.8-.2.7-.4 1.4-.5 2.1 0 .1 0 .1 0 .2v2c.1.7.2 1.4.4 2 .3.7.6 1.3 1 1.9.4.5.8 1.1 1.3 1.5.5.5 1 1 1.6 1.3.6.4 1.2.7 1.9 1 .7.2 1.3.4 2 .4h2c.7 0 1.4-.2 2-.4.7-.3 1.3-.6 1.9-1 .5-.4 1.1-.8 1.5-1.3.5-.5 1-1 1.3-1.6.4-.6.7-1.2 1-1.9.2-.6.4-1.3.4-2 0-.1 0-.1 0-.2v-2c0-.1 0-.2 0-.3zM12 4.1c.9 0 1.8.2 2.6.5l-2.6 4.3-2.6-4.3c.8-.3 1.7-.5 2.6-.5zm-5.7 3c.4-.6 1-1.1 1.5-1.5l2.6 4.3-3.6 2.6c-.2-.6-.4-1.2-.5-1.9-.1-.6-.1-1.2 0-1.8.1-.6.2-1.1.4-1.7zM4.1 12c0-.9.2-1.8.5-2.6l4.3 2.6-4.3 2.6c-.3-.8-.5-1.7-.5-2.6zm3 5.7c-.2-.6-.3-1.2-.4-1.8-.1-.6 0-1.2.1-1.8l3.6 2.6-2.6 4.3c-.6-.4-1.1-1-1.5-1.5-.4-.6-.7-1.2-.9-1.8zm4.9 2.2c-.9 0-1.8-.2-2.6-.5l2.6-4.3 2.6 4.3c-.8.3-1.7.5-2.6.5zm5.7-3l-2.6-4.3 3.6-2.6c.2.6.4 1.2.5 1.9.1.6.1 1.2 0 1.8-.1.6-.2 1.1-.4 1.7-.4.6-.7 1.2-1.1 1.5zm1.3-4.9c0 .9-.2 1.8-.5 2.6l-4.3-2.6 4.3-2.6c.3.8.5 1.7.5 2.6z"/>
-                           </svg>
+                   {/* GOAL ALERT CONTROLS */}
+                   {(activeCategory === Category.FOTBOLL || activeCategory === Category.KANALER) && (
+                       <div className="flex items-center gap-2">
+                           {/* Main Toggle */}
+                           <div 
+                               className={`pointer-events-auto cursor-pointer p-2 rounded-full transition-all duration-300
+                               ${isGoalAlertEnabled 
+                                   ? 'bg-green-600/20 text-green-400 ring-2 ring-green-500 shadow-[0_0_15px_rgba(34,197,94,0.3)] opacity-100' 
+                                   : 'bg-white/5 text-gray-500 opacity-50 hover:opacity-100'
+                               }`}
+                               onClick={(e) => {
+                                   e.stopPropagation();
+                                   setIsGoalAlertEnabled(prev => !prev);
+                               }}
+                               title={isGoalAlertEnabled ? "Disable Goal Alerts" : "Enable Goal Alerts"}
+                           >
+                               <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+                                   <path d="M12,2C6.48,2,2,6.48,2,12s4.48,10,10,10s10-4.48,10-10S17.52,2,12,2z M12,20c-4.41,0-8-3.59-8-8s3.59-8,8-8s8,3.59,8,8 S16.41,20,12,20z M17,13h-4v4h-2v-4H7v-2h4V7h2v4h4V13z" opacity="0"/> 
+                                   <path d="M21.6 10.4c-.1-.7-.3-1.4-.5-2.1-.3-.6-.6-1.2-1-1.7-.4-.5-.9-1-1.4-1.5s-1-1-1.6-1.3c-.6-.4-1.2-.7-1.8-1C14.6 2.6 13.9 2.5 13.2 2.4c-.1 0-.1 0-.2 0h-2c-.7 0-1.4.2-2 .4-.7.3-1.3.6-1.9 1-.5.4-1.1.8-1.5 1.3-.5.5-1 1-1.3 1.6-.4.6-.7 1.2-1 1.8-.2.7-.4 1.4-.5 2.1 0 .1 0 .1 0 .2v2c.1.7.2 1.4.4 2 .3.7.6 1.3 1 1.9.4.5.8 1.1 1.3 1.5.5.5 1 1 1.6 1.3.6.4 1.2.7 1.9 1 .7.2 1.3.4 2 .4h2c.7 0 1.4-.2 2-.4.7-.3 1.3-.6 1.9-1 .5-.4 1.1-.8 1.5-1.3.5-.5 1-1 1.3-1.6.4-.6.7-1.2 1-1.9.2-.6.4-1.3.4-2 0-.1 0-.1 0-.2v-2c0-.1 0-.2 0-.3zM12 4.1c.9 0 1.8.2 2.6.5l-2.6 4.3-2.6-4.3c.8-.3 1.7-.5 2.6-.5zm-5.7 3c.4-.6 1-1.1 1.5-1.5l2.6 4.3-3.6 2.6c-.2-.6-.4-1.2-.5-1.9-.1-.6-.1-1.2 0-1.8.1-.6.2-1.1.4-1.7zM4.1 12c0-.9.2-1.8.5-2.6l4.3 2.6-4.3 2.6c-.3-.8-.5-1.7-.5-2.6zm3 5.7c-.2-.6-.3-1.2-.4-1.8-.1-.6 0-1.2.1-1.8l3.6 2.6-2.6 4.3c-.6-.4-1.1-1-1.5-1.5-.4-.6-.7-1.2-.9-1.8zm4.9 2.2c-.9 0-1.8-.2-2.6-.5l2.6-4.3 2.6 4.3c-.8.3-1.7.5-2.6.5zm5.7-3l-2.6-4.3 3.6-2.6c.2.6.4 1.2.5 1.9.1.6.1 1.2 0 1.8-.1.6-.2 1.1-.4 1.7-.4.6-.7 1.2-1.1 1.5zm1.3-4.9c0 .9-.2 1.8-.5 2.6l-4.3-2.6 4.3-2.6c.3.8.5 1.7.5 2.6z"/>
+                               </svg>
+                           </div>
+                           
+                           {/* Test Button */}
+                           {isGoalAlertEnabled && (
+                               <div
+                                   className="pointer-events-auto cursor-pointer p-2 rounded-full bg-white/10 text-gray-300 hover:bg-white/20 hover:text-white transition-all"
+                                   onClick={(e) => {
+                                       e.stopPropagation();
+                                       triggerTestNotification();
+                                   }}
+                                   title="Test Notification"
+                               >
+                                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                   </svg>
+                               </div>
+                           )}
                        </div>
                    )}
                </div>
