@@ -1,6 +1,3 @@
-
-
-
 import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { Sidebar, SidebarRef } from './components/Sidebar';
 import { VideoPlayer } from './components/VideoPlayer';
@@ -56,7 +53,7 @@ const App: React.FC = () => {
       setLoading(true);
       setPlaylist([]);
       setEpgData({});
-      setSelectedGroup(null); 
+      setSelectedGroup(null);
       
       // Fetch BOTH playlists to enable Global Search
       const [entData, sportData] = await Promise.all([
@@ -80,6 +77,9 @@ const App: React.FC = () => {
       // Set the Visible Playlist based on Active Category
       const activeData = activeCategory === Category.KANALER ? entData : sportData;
       setPlaylist(activeData.groups);
+
+      // CRITICAL FIX: Disable loading state so channels can render
+      setLoading(false);
       
       setActiveSection('sidebar');
       setFocusedIndex(-1);

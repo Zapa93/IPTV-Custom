@@ -1,5 +1,19 @@
-
 import { Channel, ChannelGroup } from '../types';
+
+// Helper to generate UUIDs safely on all platforms (including WebOS/Insecure Contexts)
+const generateUUID = (): string => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    try {
+        return crypto.randomUUID();
+    } catch (e) {
+        // Fallback if crypto.randomUUID fails (e.g. insecure context)
+    }
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
 
 const generateFallbackLogo = (name: string): string => {
   // Clean name for better initials
@@ -59,7 +73,7 @@ export const parseM3U = (content: string): { groups: ChannelGroup[], epgUrl: str
       if (!name) name = 'Unknown Channel';
 
       currentChannel = {
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         name: name,
         group: groupTitle || 'Uncategorized',
         logo: tvgLogo || generateFallbackLogo(name),
@@ -92,6 +106,7 @@ export const parseM3U = (content: string): { groups: ChannelGroup[], epgUrl: str
 };
 
 export const fetchPlaylist = async (url: string): Promise<{ groups: ChannelGroup[], epgUrl: string | null }> => {
+  if (!url) return { groups: [], epgUrl: null };
   try {
     const response = await fetch(url);
     if (!response.ok) throw new Error('Network response was not ok');
