@@ -1,5 +1,3 @@
-
-
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Channel, EPGData, EPGProgram, ChannelGroup, Category, GoalEvent, HighlightMatch } from '../types';
 import { DEFAULT_LOGO } from '../constants';
@@ -22,6 +20,21 @@ interface VideoPlayerProps {
 declare global {
   interface Window { Hls: any; }
 }
+
+// Helper to check if the goal alert matches the current program (Spoiler Protection)
+const isSameMatch = (epgTitle: string | undefined, alertTitle: string): boolean => {
+    if (!epgTitle || !alertTitle) return false;
+    const normEpg = epgTitle.toLowerCase();
+    const normAlert = alertTitle.toLowerCase();
+    
+    // Split alert title into team names (handling "vs" or "v")
+    const teams = normAlert.split(/\s+(?:vs|v)\s+/);
+    
+    if (teams.length < 2) return false;
+    
+    // Check if ALL identified teams in the alert exist in the EPG title
+    return teams.every(team => normEpg.includes(team.trim()));
+};
 
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({ channel, activeCategory, allChannels, globalChannels, playlist, epgData, onClose, onChannelSelect }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -162,8 +175,13 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ channel, activeCategor
         lastKnownMatchesRef.current = updatedMatches;
 
         if (events.length > 0) {
+            // Filter out events if they match the currently watching program (Spoiler Protection)
+            const filteredEvents = events.filter(event => 
+                !isSameMatch(currentProgram?.title, event.matchTitle)
+            );
+
             // Enrich events with channel to watch if available
-            const enrichedEvents = events.map(event => {
+            const enrichedEvents = filteredEvents.map(event => {
                 const searchList = globalChannels && globalChannels.length > 0 ? globalChannels : allChannels;
                 const found = findLocalMatches(event.matchTitle, searchList, epgData);
                 // If we found a live match channel, attach it
@@ -173,8 +191,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ channel, activeCategor
                 return event;
             });
 
-            // Append all new events to the queue
-            setNotificationQueue(prev => [...prev, ...enrichedEvents]);
+            // Append all new (filtered) events to the queue
+            if (enrichedEvents.length > 0) {
+                setNotificationQueue(prev => [...prev, ...enrichedEvents]);
+            }
         }
     };
 
@@ -184,7 +204,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ channel, activeCategor
     // Poll every 60 seconds
     const interval = setInterval(poll, 60000);
     return () => clearInterval(interval);
-  }, [isGoalAlertEnabled, globalChannels, allChannels, epgData]);
+  }, [isGoalAlertEnabled, globalChannels, allChannels, epgData, currentProgram]);
 
   // 2. Queue Processor Effect (Displays one at a time)
   useEffect(() => {
