@@ -4,6 +4,7 @@
 export const SPORT_URL = process.env.VITE_SPORT_URL || "";
 export const ENTERTAINMENT_URL = process.env.VITE_ENTERTAINMENT_URL || "";
 export const MANUAL_EPG_URL = process.env.VITE_EPG_URL || "";
+export const CUSTOM_EPG_URL = process.env.VITE_EPG_URL_EXTRA || "";
 
 // API Keys
 export const FOOTBALL_API_KEY = process.env.VITE_FOOTBALL_DATA_KEY || "";

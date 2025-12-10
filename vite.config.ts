@@ -18,6 +18,7 @@ export default defineConfig(({ mode }) => {
         'process.env.VITE_SPORT_URL': JSON.stringify(env.VITE_SPORT_URL),
         'process.env.VITE_ENTERTAINMENT_URL': JSON.stringify(env.VITE_ENTERTAINMENT_URL),
         'process.env.VITE_EPG_URL': JSON.stringify(env.VITE_EPG_URL),
+        'process.env.VITE_EPG_URL_EXTRA': JSON.stringify(env.VITE_EPG_URL_EXTRA),
         'process.env.VITE_FOOTBALL_DATA_KEY': JSON.stringify(env.VITE_FOOTBALL_DATA_KEY),
       },
       resolve: {

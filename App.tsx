@@ -1,10 +1,11 @@
+
 import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { Sidebar, SidebarRef } from './components/Sidebar';
 import { VideoPlayer } from './components/VideoPlayer';
 import { fetchPlaylist } from './services/m3uService';
 import { fetchEPG, getCurrentProgram } from './services/epgService';
 import { Category, Channel, PlaylistData, EPGData, ChannelGroup } from './types';
-import { ENTERTAINMENT_URL, SPORT_URL, DEFAULT_LOGO, MANUAL_EPG_URL } from './constants';
+import { ENTERTAINMENT_URL, SPORT_URL, DEFAULT_LOGO, MANUAL_EPG_URL, CUSTOM_EPG_URL } from './constants';
 import { GroupItem, ChannelItem } from './components/ListItems';
 
 // --- CONSTANTS FOR VIRTUALIZATION ---
@@ -67,10 +68,33 @@ const App: React.FC = () => {
           setSelectedGroup(groups[0]);
       }
 
-      const epgSource = MANUAL_EPG_URL || epgUrl;
-      if (epgSource) {
-          fetchEPG(epgSource).then(data => setEpgData(data));
+      // Dual EPG Strategy: Provider + Custom
+      const providerSource = MANUAL_EPG_URL || epgUrl;
+      const customSource = CUSTOM_EPG_URL;
+      
+      const fetchTasks: Promise<EPGData>[] = [];
+      
+      // 1. Fetch Provider EPG (or resolve empty)
+      if (providerSource) {
+          fetchTasks.push(fetchEPG(providerSource));
+      } else {
+          fetchTasks.push(Promise.resolve({}));
       }
+
+      // 2. Fetch Custom EPG (or resolve empty)
+      if (customSource) {
+          fetchTasks.push(fetchEPG(customSource));
+      } else {
+          fetchTasks.push(Promise.resolve({}));
+      }
+
+      // 3. Wait for both and merge
+      Promise.all(fetchTasks).then(([providerData, customData]) => {
+          // Merge logic: Spread provider first, then overwrite with custom
+          const mergedData = { ...providerData, ...customData };
+          console.log(`EPG Loaded. Provider: ${Object.keys(providerData).length}, Custom: ${Object.keys(customData).length} channels.`);
+          setEpgData(mergedData);
+      });
     };
     loadData();
   }, [activeCategory]);
