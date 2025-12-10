@@ -5,6 +5,10 @@
     <icon src="https://www.allatvkanaler.se/assets/63/logo-sm/tv4-fotboll-tabla_sm.webp" />
     <url>http://www.allatvkanaler.se</url>
   </channel>
+  <channel id="CMoreFotboll.se-hd">
+    <display-name lang="sv">TV4 Fotboll HD</display-name>
+    <url>http://www.allatvkanaler.se</url>
+  </channel>
   <channel id="v sport extra">
     <display-name lang="sv">Viaplay Sport Extra</display-name>
     <icon src="https://www.allatvkanaler.se/assets/63/logo-sm/v-sport-extra-tabla_sm.webp" />
@@ -50,12 +54,6 @@
     <icon src="https://www.allatvkanaler.se/assets/63/logo-sm/tv4-sport-live-4-tabla_sm.webp" />
     <url>http://www.allatvkanaler.se</url>
   </channel>
-  <programme start="20251210013000 +0100" stop="20251210050000 +0100" channel="CMoreFotboll.se">
-    <title lang="sv">La Liga: Espanyol-Rayo Vallecano</title>
-  </programme>
-  <programme start="20251210050000 +0100" stop="20251210080000 +0100" channel="CMoreFotboll.se">
-    <title lang="sv">Höjdpunkter</title>
-  </programme>
   <programme start="20251210080000 +0100" stop="20251210103000 +0100" channel="CMoreFotboll.se">
     <title lang="sv">La Liga: Real Madrid-Celta Vigo</title>
   </programme>
@@ -239,17 +237,188 @@
   <programme start="20251216230000 +0100" stop="20251217013000 +0100" channel="CMoreFotboll.se">
     <title lang="sv">Serie A: Roma-Como</title>
   </programme>
-  <programme start="20251210000000 +0100" stop="20251210010500 +0100" channel="v sport extra">
-    <title lang="sv">Bundesliga Highlights</title>
+  <programme start="20251210080000 +0100" stop="20251210103000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">La Liga: Real Madrid-Celta Vigo</title>
   </programme>
-  <programme start="20251210010500 +0100" stop="20251210040000 +0100" channel="v sport extra">
-    <title lang="sv">NHL: New York Islanders-Vegas Golden Knights</title>
+  <programme start="20251210103000 +0100" stop="20251210130000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">Serie A: Pisa-Parma</title>
   </programme>
-  <programme start="20251210040000 +0100" stop="20251210130000 +0100" channel="v sport extra">
-    <title lang="sv">Ingen sändning</title>
+  <programme start="20251210130000 +0100" stop="20251210153000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">Serie A: Torino-Milan</title>
   </programme>
-  <programme start="20251210130000 +0100" stop="20251210150000 +0100" channel="v sport extra">
-    <title lang="sv">EFL Championship</title>
+  <programme start="20251210153000 +0100" stop="20251210180000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">La Liga: Osasuna-Levante</title>
+  </programme>
+  <programme start="20251210180000 +0100" stop="20251210203000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">La Liga: Real Oviedo-Mallorca</title>
+  </programme>
+  <programme start="20251210203000 +0100" stop="20251210230000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">Serie A: Sassuolo-Fiorentina</title>
+  </programme>
+  <programme start="20251210230000 +0100" stop="20251211013000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">La Liga: Deportivo Alaves-Real Sociedad</title>
+  </programme>
+  <programme start="20251211013000 +0100" stop="20251211050000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">Serie A: Inter-Como</title>
+  </programme>
+  <programme start="20251211050000 +0100" stop="20251211080000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">Höjdpunkter</title>
+  </programme>
+  <programme start="20251211080000 +0100" stop="20251211103000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">La Liga: Real Betis-Barcelona</title>
+  </programme>
+  <programme start="20251211103000 +0100" stop="20251211130000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">La Liga: Athletic Bilbao-Atletico Madrid</title>
+  </programme>
+  <programme start="20251211130000 +0100" stop="20251211153000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">Serie A: Cremonese-Lecce</title>
+  </programme>
+  <programme start="20251211153000 +0100" stop="20251211180000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">La Liga: Elche-Girona</title>
+  </programme>
+  <programme start="20251211180000 +0100" stop="20251211203000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">Serie A: Cagliari-Roma</title>
+  </programme>
+  <programme start="20251211203000 +0100" stop="20251211230000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">La Liga: Valencia-Sevilla</title>
+  </programme>
+  <programme start="20251211230000 +0100" stop="20251212013000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">Serie A: Lazio-Bologna</title>
+  </programme>
+  <programme start="20251212013000 +0100" stop="20251212050000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">La Liga: Espanyol-Rayo Vallecano</title>
+  </programme>
+  <programme start="20251212050000 +0100" stop="20251212080000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">Höjdpunkter</title>
+  </programme>
+  <programme start="20251212080000 +0100" stop="20251212103000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">La Liga: Real Madrid-Celta Vigo</title>
+  </programme>
+  <programme start="20251212103000 +0100" stop="20251212130000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">Serie A: Pisa-Parma</title>
+  </programme>
+  <programme start="20251212130000 +0100" stop="20251212153000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">Serie A: Torino-Milan</title>
+  </programme>
+  <programme start="20251212153000 +0100" stop="20251212180000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">La Liga: Osasuna-Levante</title>
+  </programme>
+  <programme start="20251212180000 +0100" stop="20251212205500 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">La Liga: Real Oviedo-Mallorca</title>
+  </programme>
+  <programme start="20251212205500 +0100" stop="20251212231500 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">La Liga: Real Sociedad-Girona</title>
+  </programme>
+  <programme start="20251212231500 +0100" stop="20251213013000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">La Liga: Real Sociedad-Girona</title>
+  </programme>
+  <programme start="20251213013000 +0100" stop="20251213050000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">Serie A: Inter-Como</title>
+  </programme>
+  <programme start="20251213050000 +0100" stop="20251213080000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">Höjdpunkter</title>
+  </programme>
+  <programme start="20251213080000 +0100" stop="20251213103000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">La Liga: Real Madrid-Celta Vigo</title>
+  </programme>
+  <programme start="20251213103000 +0100" stop="20251213135500 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">La Liga: Real Sociedad-Girona</title>
+  </programme>
+  <programme start="20251213135500 +0100" stop="20251213161000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">La Liga: Atletico Madrid-Valencia</title>
+  </programme>
+  <programme start="20251213161000 +0100" stop="20251213182000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">La Liga: Mallorca-Elche</title>
+  </programme>
+  <programme start="20251213182000 +0100" stop="20251213205500 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">La Liga: Barcelona-Osasuna</title>
+  </programme>
+  <programme start="20251213205500 +0100" stop="20251213231500 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">La Liga: Getafe-Espanyol</title>
+  </programme>
+  <programme start="20251213231500 +0100" stop="20251214013000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">La Liga: Barcelona-Osasuna</title>
+  </programme>
+  <programme start="20251214013000 +0100" stop="20251214050000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">La Liga: Getafe-Espanyol</title>
+  </programme>
+  <programme start="20251214050000 +0100" stop="20251214073000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">Höjdpunkter</title>
+  </programme>
+  <programme start="20251214073000 +0100" stop="20251214094500 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">La Liga: Atletico Madrid-Valencia</title>
+  </programme>
+  <programme start="20251214094500 +0100" stop="20251214122000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">La Liga: Barcelona-Osasuna</title>
+  </programme>
+  <programme start="20251214122000 +0100" stop="20251214145500 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">Serie A: Milan-Sassuolo</title>
+  </programme>
+  <programme start="20251214145500 +0100" stop="20251214175000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">Serie A: Udinese-Napoli</title>
+  </programme>
+  <programme start="20251214175000 +0100" stop="20251214205000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">Serie A: Genoa-Inter</title>
+  </programme>
+  <programme start="20251214205000 +0100" stop="20251214231500 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">La Liga: Deportivo Alaves-Real Madrid</title>
+  </programme>
+  <programme start="20251214231500 +0100" stop="20251215013000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">Serie A: Genoa-Inter</title>
+  </programme>
+  <programme start="20251215013000 +0100" stop="20251215050000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">La Liga: Deportivo Alaves-Real Madrid</title>
+  </programme>
+  <programme start="20251215050000 +0100" stop="20251215080000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">Höjdpunkter</title>
+  </programme>
+  <programme start="20251215080000 +0100" stop="20251215103000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">La Liga: Real Sociedad-Girona</title>
+  </programme>
+  <programme start="20251215103000 +0100" stop="20251215130000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">La Liga: Atletico Madrid-Valencia</title>
+  </programme>
+  <programme start="20251215130000 +0100" stop="20251215153000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">Serie A: Torino-Cremonese</title>
+  </programme>
+  <programme start="20251215153000 +0100" stop="20251215180000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">Serie A: Parma-Lazio</title>
+  </programme>
+  <programme start="20251215180000 +0100" stop="20251215204000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">La Liga: Barcelona-Osasuna</title>
+  </programme>
+  <programme start="20251215204000 +0100" stop="20251215230000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">Serie A: Roma-Como</title>
+  </programme>
+  <programme start="20251215230000 +0100" stop="20251216013000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">Serie A: Roma-Como</title>
+  </programme>
+  <programme start="20251216013000 +0100" stop="20251216050000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">La Liga: Getafe-Espanyol</title>
+  </programme>
+  <programme start="20251216050000 +0100" stop="20251216080000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">Höjdpunkter</title>
+  </programme>
+  <programme start="20251216080000 +0100" stop="20251216103000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">Serie A: Milan-Sassuolo</title>
+  </programme>
+  <programme start="20251216103000 +0100" stop="20251216130000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">La Liga: Sevilla-Real Oviedo</title>
+  </programme>
+  <programme start="20251216130000 +0100" stop="20251216153000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">Serie A: Udinese-Napoli</title>
+  </programme>
+  <programme start="20251216153000 +0100" stop="20251216180000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">La Liga: Celta Vigo-Athletic Bilbao</title>
+  </programme>
+  <programme start="20251216180000 +0100" stop="20251216203000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">Serie A: Genoa-Inter</title>
+  </programme>
+  <programme start="20251216203000 +0100" stop="20251216230000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">La Liga: Deportivo Alaves-Real Madrid</title>
+  </programme>
+  <programme start="20251216230000 +0100" stop="20251217013000 +0100" channel="CMoreFotboll.se-hd">
+    <title lang="sv">Serie A: Roma-Como</title>
   </programme>
   <programme start="20251210150000 +0100" stop="20251210170000 +0100" channel="v sport extra">
     <title lang="sv">UEFA Champions League: Tottenham-Slavia Prag</title>
@@ -521,21 +690,6 @@
   <programme start="20251217010000 +0100" stop="20251217020500 +0100" channel="v sport extra">
     <title lang="sv">Ingen sändning</title>
   </programme>
-  <programme start="20251210000000 +0100" stop="20251210003000 +0100" channel="v sport 1">
-    <title lang="sv">Championship Highlights</title>
-  </programme>
-  <programme start="20251210003000 +0100" stop="20251210010500 +0100" channel="v sport 1">
-    <title lang="sv">Premier League Stories</title>
-  </programme>
-  <programme start="20251210010500 +0100" stop="20251210040000 +0100" channel="v sport 1">
-    <title lang="sv">NHL: Pittsburgh Penguins-Anaheim Ducks</title>
-  </programme>
-  <programme start="20251210040000 +0100" stop="20251210130000 +0100" channel="v sport 1">
-    <title lang="sv">Ingen sändning</title>
-  </programme>
-  <programme start="20251210130000 +0100" stop="20251210133000 +0100" channel="v sport 1">
-    <title lang="sv">Championship Highlights</title>
-  </programme>
   <programme start="20251210133000 +0100" stop="20251210140000 +0100" channel="v sport 1">
     <title lang="sv">Ligue 1 Highlights (SE)</title>
   </programme>
@@ -543,7 +697,7 @@
     <title lang="sv">Premier League Review</title>
   </programme>
   <programme start="20251210150000 +0100" stop="20251210170000 +0100" channel="v sport 1">
-    <title lang="sv">UEFA Champions League: Atalanta-Chelsea</title>
+    <title lang="sv">UEFA Champions League: Barcelona-Eintracht Frankfurt</title>
   </programme>
   <programme start="20251210170000 +0100" stop="20251210180000 +0100" channel="v sport 1">
     <title lang="sv">Premier League Review</title>
@@ -782,12 +936,6 @@
   <programme start="20251217003000 +0100" stop="20251217010500 +0100" channel="v sport 1">
     <title lang="sv">Premier League Stories</title>
   </programme>
-  <programme start="20251210010000 +0100" stop="20251210115500 +0100" channel="ViasatFotboll.se">
-    <title lang="sv">Ingen sändning</title>
-  </programme>
-  <programme start="20251210115500 +0100" stop="20251210135500 +0100" channel="ViasatFotboll.se">
-    <title lang="sv">Ligue 1</title>
-  </programme>
   <programme start="20251210135500 +0100" stop="20251210145500 +0100" channel="ViasatFotboll.se">
     <title lang="sv">Premier League Review</title>
   </programme>
@@ -980,21 +1128,6 @@
   <programme start="20251216223000 +0100" stop="20251216230000 +0100" channel="ViasatFotboll.se">
     <title lang="sv">Ligue 1 Highlights (SE)</title>
   </programme>
-  <programme start="20251210003000 +0100" stop="20251210010000 +0100" channel="ViasatSportPremium.se">
-    <title lang="sv">Ligue 1 Highlights (SE)</title>
-  </programme>
-  <programme start="20251210010000 +0100" stop="20251210033500 +0100" channel="ViasatSportPremium.se">
-    <title lang="sv">Ingen sändning</title>
-  </programme>
-  <programme start="20251210033500 +0100" stop="20251210063000 +0100" channel="ViasatSportPremium.se">
-    <title lang="sv">NHL: Nashville Predators-Colorado Avalanche</title>
-  </programme>
-  <programme start="20251210063000 +0100" stop="20251210120000 +0100" channel="ViasatSportPremium.se">
-    <title lang="sv">Ingen sändning</title>
-  </programme>
-  <programme start="20251210120000 +0100" stop="20251210140000 +0100" channel="ViasatSportPremium.se">
-    <title lang="sv">UEFA Champions League: Atalanta-Chelsea</title>
-  </programme>
   <programme start="20251210140000 +0100" stop="20251210150000 +0100" channel="ViasatSportPremium.se">
     <title lang="sv">Premier League Review</title>
   </programme>
@@ -1079,10 +1212,10 @@
   <programme start="20251212192000 +0100" stop="20251212195000 +0100" channel="ViasatSportPremium.se">
     <title lang="sv">Champions League Magazine</title>
   </programme>
-  <programme start="20251212195000 +0100" stop="20251212202000 +0100" channel="ViasatSportPremium.se">
+  <programme start="20251212195000 +0100" stop="20251212202100 +0100" channel="ViasatSportPremium.se">
     <title lang="sv">Premier League Preview</title>
   </programme>
-  <programme start="20251212202000 +0100" stop="20251212223000 +0100" channel="ViasatSportPremium.se">
+  <programme start="20251212202100 +0100" stop="20251212223000 +0100" channel="ViasatSportPremium.se">
     <title lang="sv">Bundesliga: Union Berlin-Leipzig</title>
   </programme>
   <programme start="20251212223000 +0100" stop="20251212230000 +0100" channel="ViasatSportPremium.se">
@@ -1094,28 +1227,28 @@
   <programme start="20251213010000 +0100" stop="20251213030500 +0100" channel="ViasatSportPremium.se">
     <title lang="sv">Ingen sändning</title>
   </programme>
-  <programme start="20251213030500 +0100" stop="20251213101500 +0100" channel="ViasatSportPremium.se">
+  <programme start="20251213030500 +0100" stop="20251213100000 +0100" channel="ViasatSportPremium.se">
     <title lang="sv">NHL: Utah Mammoth-Seattle Kraken</title>
   </programme>
-  <programme start="20251213101500 +0100" stop="20251213111500 +0100" channel="ViasatSportPremium.se">
+  <programme start="20251213100000 +0100" stop="20251213110000 +0100" channel="ViasatSportPremium.se">
     <title lang="sv">Premier League Review</title>
   </programme>
-  <programme start="20251213111500 +0100" stop="20251213114500 +0100" channel="ViasatSportPremium.se">
+  <programme start="20251213110000 +0100" stop="20251213113000 +0100" channel="ViasatSportPremium.se">
     <title lang="sv">Premier League Preview</title>
   </programme>
-  <programme start="20251213114500 +0100" stop="20251213121500 +0100" channel="ViasatSportPremium.se">
+  <programme start="20251213113000 +0100" stop="20251213120000 +0100" channel="ViasatSportPremium.se">
     <title lang="sv">Champions League Magazine</title>
   </programme>
-  <programme start="20251213121500 +0100" stop="20251213141500 +0100" channel="ViasatSportPremium.se">
+  <programme start="20251213120000 +0100" stop="20251213140000 +0100" channel="ViasatSportPremium.se">
     <title lang="sv">UEFA Champions League: Juventus-Pafos</title>
   </programme>
-  <programme start="20251213141500 +0100" stop="20251213151500 +0100" channel="ViasatSportPremium.se">
+  <programme start="20251213140000 +0100" stop="20251213150000 +0100" channel="ViasatSportPremium.se">
     <title lang="sv">Premier League Review</title>
   </programme>
-  <programme start="20251213151500 +0100" stop="20251213154500 +0100" channel="ViasatSportPremium.se">
+  <programme start="20251213150000 +0100" stop="20251213153000 +0100" channel="ViasatSportPremium.se">
     <title lang="sv">Premier League Stories</title>
   </programme>
-  <programme start="20251213154500 +0100" stop="20251213155500 +0100" channel="ViasatSportPremium.se">
+  <programme start="20251213153000 +0100" stop="20251213155500 +0100" channel="ViasatSportPremium.se">
     <title lang="sv">Premier League Studio</title>
   </programme>
   <programme start="20251213155500 +0100" stop="20251213180000 +0100" channel="ViasatSportPremium.se">
@@ -1253,19 +1386,16 @@
   <programme start="20251217010500 +0100" stop="20251217040500 +0100" channel="ViasatSportPremium.se">
     <title lang="sv">NHL: Toronto Maple Leafs-Chicago Blackhawks</title>
   </programme>
-  <programme start="20251210003500 +0100" stop="20251210050000 +0100" channel="Sportkanalen.se">
-    <title lang="sv">Höjdpunkter</title>
-  </programme>
-  <programme start="20251210050000 +0100" stop="20251210120000 +0100" channel="Sportkanalen.se">
-    <title lang="sv">Höjdpunkter</title>
-  </programme>
-  <programme start="20251210120000 +0100" stop="20251210124000 +0100" channel="Sportkanalen.se">
+  <programme start="20251210120000 +0100" stop="20251210123500 +0100" channel="Sportkanalen.se">
     <title lang="sv">LaLiga Highlights</title>
   </programme>
-  <programme start="20251210124000 +0100" stop="20251210125500 +0100" channel="Sportkanalen.se">
+  <programme start="20251210123500 +0100" stop="20251210125000 +0100" channel="Sportkanalen.se">
     <title lang="sv">Journey to Jeddah</title>
   </programme>
-  <programme start="20251210125500 +0100" stop="20251210140000 +0100" channel="Sportkanalen.se">
+  <programme start="20251210125000 +0100" stop="20251210130000 +0100" channel="Sportkanalen.se">
+    <title lang="sv">Höjdpunkter</title>
+  </programme>
+  <programme start="20251210130000 +0100" stop="20251210140000 +0100" channel="Sportkanalen.se">
     <title lang="sv">ATP - Tournament Review Show</title>
   </programme>
   <programme start="20251210140000 +0100" stop="20251210143000 +0100" channel="Sportkanalen.se">
@@ -1277,20 +1407,23 @@
   <programme start="20251210150000 +0100" stop="20251210160000 +0100" channel="Sportkanalen.se">
     <title lang="sv">World Supercross Championship Highlights</title>
   </programme>
-  <programme start="20251210160000 +0100" stop="20251210163500 +0100" channel="Sportkanalen.se">
+  <programme start="20251210160000 +0100" stop="20251210163000 +0100" channel="Sportkanalen.se">
     <title lang="sv">Wikegård vs</title>
   </programme>
-  <programme start="20251210163500 +0100" stop="20251210170500 +0100" channel="Sportkanalen.se">
+  <programme start="20251210163000 +0100" stop="20251210170000 +0100" channel="Sportkanalen.se">
     <title lang="sv">Dryflystories - Hämta håven</title>
   </programme>
-  <programme start="20251210170500 +0100" stop="20251210173500 +0100" channel="Sportkanalen.se">
+  <programme start="20251210170000 +0100" stop="20251210173000 +0100" channel="Sportkanalen.se">
     <title lang="sv">Global Champions Tour Highlights</title>
   </programme>
-  <programme start="20251210173500 +0100" stop="20251210181500 +0100" channel="Sportkanalen.se">
+  <programme start="20251210173000 +0100" stop="20251210181000 +0100" channel="Sportkanalen.se">
     <title lang="sv">LaLiga Highlights</title>
   </programme>
-  <programme start="20251210181500 +0100" stop="20251210185500 +0100" channel="Sportkanalen.se">
+  <programme start="20251210181000 +0100" stop="20251210184000 +0100" channel="Sportkanalen.se">
     <title lang="sv">Serie A Full Impact</title>
+  </programme>
+  <programme start="20251210184000 +0100" stop="20251210185500 +0100" channel="Sportkanalen.se">
+    <title lang="sv">Höjdpunkter</title>
   </programme>
   <programme start="20251210185500 +0100" stop="20251210212000 +0100" channel="Sportkanalen.se">
     <title lang="sv">Kalmar-Karlskoga HockeyAllsvenskan</title>
@@ -1298,10 +1431,13 @@
   <programme start="20251210212000 +0100" stop="20251210213000 +0100" channel="Sportkanalen.se">
     <title lang="sv">Höjdpunkter</title>
   </programme>
-  <programme start="20251210213000 +0100" stop="20251210223000 +0100" channel="Sportkanalen.se">
+  <programme start="20251210213000 +0100" stop="20251210222000 +0100" channel="Sportkanalen.se">
     <title lang="sv">Fiskedestination</title>
   </programme>
-  <programme start="20251210223000 +0100" stop="20251210230000 +0100" channel="Sportkanalen.se">
+  <programme start="20251210222000 +0100" stop="20251210223500 +0100" channel="Sportkanalen.se">
+    <title lang="sv">Höjdpunkter</title>
+  </programme>
+  <programme start="20251210223500 +0100" stop="20251210230000 +0100" channel="Sportkanalen.se">
     <title lang="sv">Sverige springer</title>
   </programme>
   <programme start="20251210230000 +0100" stop="20251210233000 +0100" channel="Sportkanalen.se">
@@ -1535,40 +1671,43 @@
   <programme start="20251214134500 +0100" stop="20251214141500 +0100" channel="Sportkanalen.se">
     <title lang="sv">Sverige springer</title>
   </programme>
-  <programme start="20251214141500 +0100" stop="20251214145500 +0100" channel="Sportkanalen.se">
+  <programme start="20251214141500 +0100" stop="20251214144500 +0100" channel="Sportkanalen.se">
     <title lang="sv">The WRC Magazine</title>
   </programme>
-  <programme start="20251214145500 +0100" stop="20251214170500 +0100" channel="Sportkanalen.se">
+  <programme start="20251214144500 +0100" stop="20251214145500 +0100" channel="Sportkanalen.se">
+    <title lang="sv">Höjdpunkter</title>
+  </programme>
+  <programme start="20251214145500 +0100" stop="20251214170000 +0100" channel="Sportkanalen.se">
     <title lang="sv">Serie A: Fiorentina-Verona</title>
   </programme>
-  <programme start="20251214170500 +0100" stop="20251214171500 +0100" channel="Sportkanalen.se">
+  <programme start="20251214170000 +0100" stop="20251214171500 +0100" channel="Sportkanalen.se">
     <title lang="sv">Höjdpunkter</title>
   </programme>
-  <programme start="20251214171500 +0100" stop="20251214175000 +0100" channel="Sportkanalen.se">
+  <programme start="20251214171500 +0100" stop="20251214174500 +0100" channel="Sportkanalen.se">
     <title lang="sv">Inside Serie A</title>
   </programme>
-  <programme start="20251214175000 +0100" stop="20251214182500 +0100" channel="Sportkanalen.se">
+  <programme start="20251214174500 +0100" stop="20251214182500 +0100" channel="Sportkanalen.se">
     <title lang="sv">Serie A Full Impact</title>
   </programme>
-  <programme start="20251214182500 +0100" stop="20251214203500 +0100" channel="Sportkanalen.se">
+  <programme start="20251214182500 +0100" stop="20251214203000 +0100" channel="Sportkanalen.se">
     <title lang="sv">La Liga: Levante-Villarreal</title>
   </programme>
-  <programme start="20251214203500 +0100" stop="20251214205500 +0100" channel="Sportkanalen.se">
+  <programme start="20251214203000 +0100" stop="20251214205500 +0100" channel="Sportkanalen.se">
     <title lang="sv">Höjdpunkter</title>
   </programme>
-  <programme start="20251214205500 +0100" stop="20251214230500 +0100" channel="Sportkanalen.se">
+  <programme start="20251214205500 +0100" stop="20251214230000 +0100" channel="Sportkanalen.se">
     <title lang="sv">Fotboll: Segunda División</title>
   </programme>
-  <programme start="20251214230500 +0100" stop="20251214233500 +0100" channel="Sportkanalen.se">
+  <programme start="20251214230000 +0100" stop="20251214233000 +0100" channel="Sportkanalen.se">
     <title lang="sv">Road to One Water Race</title>
   </programme>
-  <programme start="20251214233500 +0100" stop="20251215001000 +0100" channel="Sportkanalen.se">
+  <programme start="20251214233000 +0100" stop="20251215000500 +0100" channel="Sportkanalen.se">
     <title lang="sv">Racing on the Edge</title>
   </programme>
-  <programme start="20251215001000 +0100" stop="20251215011500 +0100" channel="Sportkanalen.se">
+  <programme start="20251215000500 +0100" stop="20251215010500 +0100" channel="Sportkanalen.se">
     <title lang="sv">WRC Greatest Drivers</title>
   </programme>
-  <programme start="20251215011500 +0100" stop="20251215050000 +0100" channel="Sportkanalen.se">
+  <programme start="20251215010500 +0100" stop="20251215050000 +0100" channel="Sportkanalen.se">
     <title lang="sv">Höjdpunkter</title>
   </programme>
   <programme start="20251215050000 +0100" stop="20251215120000 +0100" channel="Sportkanalen.se">
@@ -1685,12 +1824,6 @@
   <programme start="20251216231000 +0100" stop="20251217001500 +0100" channel="Sportkanalen.se">
     <title lang="sv">World Supercross Championship Highlights</title>
   </programme>
-  <programme start="20251210013000 +0100" stop="20251210050000 +0100" channel="CMoreLive.se">
-    <title lang="sv">ATP Tour</title>
-  </programme>
-  <programme start="20251210050000 +0100" stop="20251210070000 +0100" channel="CMoreLive.se">
-    <title lang="sv">Höjdpunkter</title>
-  </programme>
   <programme start="20251210070000 +0100" stop="20251210091000 +0100" channel="CMoreLive.se">
     <title lang="sv">ATP Tour</title>
   </programme>
@@ -1757,11 +1890,8 @@
   <programme start="20251214161000 +0100" stop="20251214184500 +0100" channel="CMoreLive.se">
     <title lang="sv">La Liga: Celta Vigo-Athletic Bilbao</title>
   </programme>
-  <programme start="20251214184500 +0100" stop="20251214210000 +0100" channel="CMoreLive.se">
+  <programme start="20251214184500 +0100" stop="20251215013000 +0100" channel="CMoreLive.se">
     <title lang="sv">La Liga: Sevilla-Real Oviedo</title>
-  </programme>
-  <programme start="20251214210000 +0100" stop="20251215013000 +0100" channel="CMoreLive.se">
-    <title lang="sv">La Liga: Celta Vigo-Athletic Bilbao</title>
   </programme>
   <programme start="20251215013000 +0100" stop="20251215050000 +0100" channel="CMoreLive.se">
     <title lang="sv">ATP Tour</title>
@@ -1805,9 +1935,6 @@
   <programme start="20251216122500 +0100" stop="20251217010000 +0100" channel="CMoreLive.se">
     <title lang="sv">ATP Tour</title>
   </programme>
-  <programme start="20251210050000 +0100" stop="20251210185500 +0100" channel="CMoreLive2.se">
-    <title lang="sv">Höjdpunkter</title>
-  </programme>
   <programme start="20251210185500 +0100" stop="20251210214500 +0100" channel="CMoreLive2.se">
     <title lang="sv">Mora-Nybro HockeyAllsvenskan</title>
   </programme>
@@ -1835,9 +1962,6 @@
   <programme start="20251212050000 +0100" stop="20251212050000 +0100" channel="CMoreLive2.se">
     <title lang="sv">Höjdpunkter</title>
   </programme>
-  <programme start="20251210050000 +0100" stop="20251210185500 +0100" channel="CMoreLive3.se">
-    <title lang="sv">Höjdpunkter</title>
-  </programme>
   <programme start="20251210185500 +0100" stop="20251210214500 +0100" channel="CMoreLive3.se">
     <title lang="sv">Västerås-Troja-Ljungby HockeyAllsvenskan</title>
   </programme>
@@ -1863,9 +1987,6 @@
     <title lang="sv">Höjdpunkter</title>
   </programme>
   <programme start="20251212050000 +0100" stop="20251212050000 +0100" channel="CMoreLive3.se">
-    <title lang="sv">Höjdpunkter</title>
-  </programme>
-  <programme start="20251210050000 +0100" stop="20251210185500 +0100" channel="CMoreLive4.se">
     <title lang="sv">Höjdpunkter</title>
   </programme>
   <programme start="20251210185500 +0100" stop="20251210214500 +0100" channel="CMoreLive4.se">
