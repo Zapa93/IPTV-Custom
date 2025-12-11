@@ -1,3 +1,4 @@
+
 import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { Sidebar, SidebarRef } from './components/Sidebar';
 import { VideoPlayer } from './components/VideoPlayer';
@@ -56,9 +57,10 @@ const App: React.FC = () => {
       setSelectedGroup(null);
       
       // Fetch BOTH playlists to enable Global Search
+      // Pass the specific category to fetchPlaylist so parsing logic (Grouping) applies correctly
       const [entData, sportData] = await Promise.all([
-        fetchPlaylist(ENTERTAINMENT_URL),
-        fetchPlaylist(SPORT_URL)
+        fetchPlaylist(ENTERTAINMENT_URL, Category.KANALER),
+        fetchPlaylist(SPORT_URL, Category.FOTBOLL)
       ]);
 
       // Combine all channels and remove duplicates by URL

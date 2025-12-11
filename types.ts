@@ -1,5 +1,10 @@
 
 
+export interface StreamVariant {
+  quality: string;
+  url: string;
+}
+
 export interface Channel {
   id: string;
   name: string;
@@ -7,6 +12,7 @@ export interface Channel {
   group: string;
   url: string;
   tvgId?: string;
+  streams?: StreamVariant[];
 }
 
 export interface ChannelGroup {

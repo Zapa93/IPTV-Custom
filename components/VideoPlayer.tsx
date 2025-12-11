@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Channel, EPGData, EPGProgram, ChannelGroup, Category, GoalEvent, HighlightMatch } from '../types';
 import { DEFAULT_LOGO } from '../constants';
@@ -45,6 +46,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ channel, activeCategor
   const [isListOpen, setIsListOpen] = useState(false);
   const [showTeletext, setShowTeletext] = useState(false);
   const [resolution, setResolution] = useState<string | null>(null);
+  
+  // Stream Switching State
+  const [activeStreamIndex, setActiveStreamIndex] = useState(0);
+  const [streamSwitchToast, setStreamSwitchToast] = useState<string | null>(null);
+  const streamToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   // State for virtualization
   const [scrollTop, setScrollTop] = useState(0);
@@ -99,6 +105,9 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ channel, activeCategor
         }
         setPrevChannelId(channel.id);
      }
+     // Reset Stream Index when channel changes
+     setActiveStreamIndex(0);
+     setStreamSwitchToast(null);
   }
 
   // Update EPG info periodically
@@ -263,6 +272,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ channel, activeCategor
   const focusAreaRef = useRef(focusArea);
   const onCloseRef = useRef(onClose);
   const showTeletextRef = useRef(showTeletext);
+  const activeStreamIndexRef = useRef(activeStreamIndex);
   
   // Ref for current notification to be accessible in keydown
   const currentNotificationRef = useRef(currentNotification);
@@ -277,6 +287,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ channel, activeCategor
   useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
   useEffect(() => { showTeletextRef.current = showTeletext; }, [showTeletext]);
   useEffect(() => { currentNotificationRef.current = currentNotification; }, [currentNotification]);
+  useEffect(() => { activeStreamIndexRef.current = activeStreamIndex; }, [activeStreamIndex]);
 
   const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -345,7 +356,12 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ channel, activeCategor
 
     const loadStream = () => {
         setIsLoading(true);
-        const url = channel.url;
+        // Determine URL based on stream variants or fallback to default
+        let url = channel.url;
+        if (channel.streams && channel.streams.length > 0 && channel.streams[activeStreamIndex]) {
+            url = channel.streams[activeStreamIndex].url;
+        }
+
         const isNativeSupported = video.canPlayType('application/vnd.apple.mpegurl');
 
         if (isNativeSupported) {
@@ -417,7 +433,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ channel, activeCategor
       video.removeAttribute('src'); 
       video.load();
     };
-  }, [channel]);
+  }, [channel, activeStreamIndex]);
 
   // Controls Logic
   const resetControls = useCallback(() => {
@@ -434,6 +450,15 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ channel, activeCategor
       if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
     };
   }, [resetControls]);
+
+  // Handle Stream Switching Toast
+  const showStreamToast = (quality: string) => {
+      if (streamToastTimerRef.current) clearTimeout(streamToastTimerRef.current);
+      setStreamSwitchToast(quality);
+      streamToastTimerRef.current = setTimeout(() => {
+          setStreamSwitchToast(null);
+      }, 2000);
+  };
 
   // Input Handling
   useEffect(() => {
@@ -515,6 +540,29 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ channel, activeCategor
             window.history.back(); 
         }
         return;
+      }
+
+      // --- STREAM SWITCHING (Left/Right) when List is CLOSED ---
+      if (!currentIsListOpen && channelRef.current.streams && channelRef.current.streams.length > 1) {
+          if (isLeft) {
+              e.preventDefault(); e.stopPropagation();
+              const streams = channelRef.current.streams;
+              const currentIndex = activeStreamIndexRef.current;
+              // Cycle Previous
+              const newIndex = (currentIndex - 1 + streams.length) % streams.length;
+              setActiveStreamIndex(newIndex);
+              showStreamToast(streams[newIndex].quality);
+              return;
+          } else if (isRight) {
+              e.preventDefault(); e.stopPropagation();
+              const streams = channelRef.current.streams;
+              const currentIndex = activeStreamIndexRef.current;
+              // Cycle Next
+              const newIndex = (currentIndex + 1) % streams.length;
+              setActiveStreamIndex(newIndex);
+              showStreamToast(streams[newIndex].quality);
+              return;
+          }
       }
 
       if (isLeft) {
@@ -725,6 +773,16 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ channel, activeCategor
           <TeletextViewer onClose={() => setShowTeletext(false)} />
       )}
 
+      {/* STREAM SWITCHING TOAST */}
+      <div 
+        className={`absolute top-10 inset-x-0 flex justify-center pointer-events-none transition-opacity duration-300 z-[70]
+          ${streamSwitchToast ? 'opacity-100' : 'opacity-0'}`}
+      >
+          <div className="bg-black/60 backdrop-blur-md px-6 py-2 rounded-full border border-white/20">
+              <span className="text-xl font-bold text-white uppercase tracking-wider">{streamSwitchToast}</span>
+          </div>
+      </div>
+
       {/* GOAL NOTIFICATION POPUP */}
       <div 
         className={`absolute top-8 right-8 z-[60] transition-all duration-500 ease-out transform
@@ -856,6 +914,13 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ channel, activeCategor
                    {resolution && (
                        <div className="px-2 py-1 rounded bg-white/10 border border-white/10 text-xs font-mono text-gray-300 font-bold">
                            {resolution}
+                       </div>
+                   )}
+
+                   {/* Current Quality Badge */}
+                   {channel.streams && channel.streams.length > 1 && (
+                       <div className="px-2 py-1 rounded bg-purple-600/50 border border-purple-400/30 text-xs font-bold text-white uppercase tracking-wide">
+                           {channel.streams[activeStreamIndex]?.quality || 'Multi-Stream'}
                        </div>
                    )}
                    
