@@ -4,7 +4,7 @@ import { FOOTBALL_API_KEY } from '../constants';
 
 export type HighlightsResult = HighlightMatch[];
 
-const CACHE_KEY = 'football_data_highlights_v2';
+const CACHE_KEY = 'football_data_highlights_v3'; // Bumped version to invalidate old cache
 
 // --- CACHING UTILITIES ---
 
@@ -259,10 +259,9 @@ export const fetchFootballHighlights = async (): Promise<HighlightsResult> => {
         return false;
     });
 
-    // FALLBACK: If strict filter returns nothing, show everything we found (up to 15)
-    // This fixes the issue where valid API data was hidden because it wasn't "Top Tier"
+    // FALLBACK: If strict filter returns nothing, show everything we found (up to 30)
     if (filteredMatches.length === 0 && validMatches.length > 0) {
-        filteredMatches = validMatches.slice(0, 15);
+        filteredMatches = validMatches.slice(0, 30);
     }
 
     // --- PRIORITY SCORING SYSTEM ---
@@ -271,26 +270,24 @@ export const fetchFootballHighlights = async (): Promise<HighlightsResult> => {
         let score = 0;
         const text = (m.match + " " + m.league).toLowerCase();
         
-        // TIER 0: GOD TIER (Inter & Milan)
+        // TIER 0: GOD TIER (Inter & Milan & Malmo)
         if (text.includes('inter ') || text.includes('internazionale')) return 5000000;
         if (text.includes('ac milan') || (text.includes('milan') && !text.includes('inter'))) return 4900000;
-
-        // Malmö check
-        if (text.includes('malmö') || text.includes('malmo') || text.includes('mff')) score += 100000;
+        if (text.includes('malmö') || text.includes('malmo') || text.includes('mff')) return 4800000;
 
         // BASE LEAGUE SCORES
         if (text.includes('serie a') || text.includes('calcio') || text.includes('coppa italia')) score += 50000;
         else if (text.includes('champions league')) score += 60000; 
-        else if (text.includes('europa league')) score += 45000;
-        else if (text.includes('conference league')) score += 40000;
+        else if (text.includes('europa') || text.includes('conference')) score += 55000; // Boosted EL/UECL
         else if (text.includes('premier league') || text.includes('epl')) score += 40000;
         else if (text.includes('primera division') || text.includes('la liga')) score += 30000;
         else if (text.includes('allsvenskan')) score += 35000;
         else score += 10000;
 
         // TEAM BONUSES
+        // Massive boost for Italian teams to outrank PL teams
         const italianCount = topItalianTeams.filter(t => text.includes(t)).length;
-        score += (italianCount * 250000);
+        score += (italianCount * 500000); 
 
         const globalCount = topGlobalTeams.filter(t => text.includes(t)).length;
         score += (globalCount * 200000);
@@ -324,7 +321,6 @@ export const pollLiveScores = async (previousMatches: HighlightMatch[]): Promise
   }
 
   const apiKey = FOOTBALL_API_KEY;
-  // Note: We attempt polling even without a key, though it may fail rate limiting
   
   try {
     const headers: HeadersInit = {};

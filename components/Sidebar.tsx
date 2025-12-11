@@ -1,6 +1,4 @@
 
-
-
 import React, { useEffect, useState, useRef, useImperativeHandle, forwardRef } from 'react';
 import { Category, EPGData, Channel, HighlightMatch, LocalMatchChannel } from '../types';
 import { fetchFootballHighlights } from '../services/geminiService';
@@ -47,7 +45,7 @@ export const Sidebar = forwardRef<SidebarRef, SidebarProps>(({ activeCategory, o
     const loadHighlights = async () => {
       setLoading(true);
       const matches = await fetchFootballHighlights();
-      setHighlights(matches.slice(0, 12)); 
+      setHighlights(matches.slice(0, 30)); 
       setLoading(false);
     };
     loadHighlights();
