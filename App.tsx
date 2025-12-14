@@ -493,20 +493,20 @@ const App: React.FC = () => {
       />
 
       <div className="flex-1 flex flex-col h-full relative z-0">
-        <header className="h-24 px-8 flex items-center justify-between border-b border-white/5 bg-[#0a0a0a] z-20 shadow-sm shrink-0">
+        <header className="h-28 px-10 flex items-center justify-between border-b border-white/5 bg-[#0a0a0a] z-20 shadow-sm shrink-0">
           <div>
-            <div className="flex items-center gap-3">
-               <h2 className="text-3xl font-bold text-white tracking-tight">{activeCategory}</h2>
+            <div className="flex items-center gap-4">
+               <h2 className="text-5xl font-bold text-white tracking-tight">{activeCategory}</h2>
                {selectedGroup && selectedGroup.title !== 'Uncategorized' && (
                    <>
-                      <svg className="w-6 h-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-8 h-8 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
-                      <h2 className="text-3xl font-bold text-purple-400 tracking-tight">{selectedGroup.title}</h2>
+                      <h2 className="text-5xl font-bold text-purple-400 tracking-tight">{selectedGroup.title}</h2>
                    </>
                )}
             </div>
-            <p className="text-gray-400 text-sm mt-1">
+            <p className="text-gray-400 text-xl mt-1.5 ml-1">
               {loading 
                  ? 'Loading...' 
                  : selectedGroup 
@@ -520,7 +520,7 @@ const App: React.FC = () => {
         <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto relative no-scrollbar">
           {loading ? (
              <div className="p-6 space-y-3">
-              {[...Array(8)].map((_, i) => <div key={i} className="h-20 w-full bg-white/5 rounded-lg opacity-50" />)}
+              {[...Array(8)].map((_, i) => <div key={i} className="h-24 w-full bg-white/5 rounded-lg opacity-50" />)}
             </div>
           ) : (
             <>

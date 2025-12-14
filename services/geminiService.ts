@@ -4,7 +4,10 @@ import { FOOTBALL_API_KEY } from '../constants';
 
 export type HighlightsResult = HighlightMatch[];
 
-const CACHE_KEY = 'football_data_highlights_v3'; // Bumped version to invalidate old cache
+const CACHE_KEY = 'football_data_highlights_v5'; // Bumped version for Hybrid API
+
+// --- MODULE STATE FOR RATE LIMITING ---
+let lastTsdbPoll = 0;
 
 // --- CACHING UTILITIES ---
 
@@ -126,7 +129,63 @@ const cleanupOldCache = (): void => {
   }
 };
 
-// --- SERVICES ---
+// --- SECONDARY API SERVICE (TheSportsDB) ---
+
+const fetchTheSportsDB = async (dateStr: string): Promise<HighlightMatch[]> => {
+    try {
+        // Using Free Tier Key '3'
+        const url = `https://www.thesportsdb.com/api/v1/json/3/eventsday.php?d=${dateStr}&s=Soccer`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (!data.events) return [];
+
+        const targetLeagues = [
+            'UEFA Europa League',
+            'UEFA Conference League',
+            'FA Cup',
+            'Carabao Cup', // EFL Cup
+            'Copa del Rey',
+            'Coppa Italia',
+            'DFB-Pokal',
+            'Coupe de France',
+            'Svenska Cupen'
+        ];
+
+        return data.events
+            .filter((e: any) => targetLeagues.some(l => e.strLeague && e.strLeague.includes(l)))
+            .map((e: any) => {
+                // Status Mapping
+                let status: any = 'SCHEDULED';
+                if (e.strStatus === 'Match Finished' || e.strStatus === 'FT') status = 'FINISHED';
+                else if (e.strStatus === 'Live' || e.strStatus === 'In Progress' || e.strStatus === 'HT') status = 'IN_PLAY';
+                else if (e.strStatus === 'Postponed') status = 'POSTPONED';
+
+                // Time formatting (HH:MM)
+                const timeStr = e.strTime ? e.strTime.substring(0, 5) : '00:00';
+
+                return {
+                    id: `tsdb_${e.idEvent}`, // ID Prefix to avoid collision
+                    league: e.strLeague,
+                    match: e.strEvent,
+                    time: timeStr,
+                    rawDate: `${e.dateEvent}T${e.strTime}`, // Construct ISO-like string
+                    homeTeam: e.strHomeTeam,
+                    awayTeam: e.strAwayTeam,
+                    homeLogo: e.strHomeTeamBadge || '',
+                    awayLogo: e.strAwayTeamBadge || '',
+                    status: status,
+                    homeScore: e.intHomeScore ? parseInt(e.intHomeScore) : null,
+                    awayScore: e.intAwayScore ? parseInt(e.intAwayScore) : null
+                };
+            });
+    } catch (err) {
+        console.warn("TheSportsDB Secondary Fetch failed (Non-critical):", err);
+        return [];
+    }
+};
+
+// --- MAIN SERVICE ---
 
 export const fetchFootballHighlights = async (): Promise<HighlightsResult> => {
   cleanupOldCache();
@@ -142,7 +201,7 @@ export const fetchFootballHighlights = async (): Promise<HighlightsResult> => {
     } else {
         const apiKey = FOOTBALL_API_KEY;
         
-        // Use Local Time for Date Window
+        // Date Logic
         const todayDate = new Date();
         const tomorrowDate = new Date();
         tomorrowDate.setDate(tomorrowDate.getDate() + 1);
@@ -150,60 +209,71 @@ export const fetchFootballHighlights = async (): Promise<HighlightsResult> => {
         const todayStr = getLocalDateString(todayDate);
         const tomorrowStr = getLocalDateString(tomorrowDate);
         
-        console.log(`Fetching matches for ${todayStr} to ${tomorrowStr}...`);
+        console.log(`Fetching matches for ${todayStr}...`);
         
-        const headers: HeadersInit = {};
-        if (apiKey) {
-            headers['X-Auth-Token'] = apiKey;
-        }
+        // --- STEP 1: PRIMARY API (football-data.org) ---
+        let mainMatches: HighlightMatch[] = [];
+        try {
+            const headers: HeadersInit = {};
+            if (apiKey) headers['X-Auth-Token'] = apiKey;
 
-        const response = await fetch(`https://api.football-data.org/v4/matches?dateFrom=${todayStr}&dateTo=${tomorrowStr}`, {
-            headers: headers
-        });
-
-        if (!response.ok) {
-            console.error(`API Error: ${response.status} ${response.statusText}`);
-            // If API fails, try to return stale cache if available
-             const staleCache = getFromCache<HighlightMatch[]>(CACHE_KEY, true);
-             if (staleCache) return staleCache; 
-             return [];
-        }
-
-        const data = await response.json();
-        
-        if (data.matches && Array.isArray(data.matches)) {
-            matches = data.matches.map((m: any) => {
-                const date = new Date(m.utcDate);
-                // Format time as HH:MM
-                const timeStr = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-                
-                const homeName = m.homeTeam?.name || 'Home';
-                const awayName = m.awayTeam?.name || 'Away';
-                const status = m.status;
-                
-                const matchDay = date.getDate();
-                const currentDay = new Date().getDate();
-                const timeLabel = matchDay !== currentDay ? `Tom ${timeStr}` : timeStr;
-
-                return {
-                    id: String(m.id),
-                    league: m.competition?.name || 'Unknown',
-                    match: `${homeName} vs ${awayName}`,
-                    time: timeLabel,
-                    rawDate: m.utcDate,
-                    homeTeam: homeName,
-                    awayTeam: awayName,
-                    homeLogo: m.homeTeam?.crest || '',
-                    awayLogo: m.awayTeam?.crest || '',
-                    status: status,
-                    homeScore: m.score?.fullTime?.home ?? null,
-                    awayScore: m.score?.fullTime?.away ?? null
-                };
+            const response = await fetch(`https://api.football-data.org/v4/matches?dateFrom=${todayStr}&dateTo=${tomorrowStr}`, {
+                headers: headers
             });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.matches && Array.isArray(data.matches)) {
+                    mainMatches = data.matches.map((m: any) => {
+                        const date = new Date(m.utcDate);
+                        const timeStr = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+                        const matchDay = date.getDate();
+                        const currentDay = new Date().getDate();
+                        const timeLabel = matchDay !== currentDay ? `Tom ${timeStr}` : timeStr;
+
+                        return {
+                            id: String(m.id),
+                            league: m.competition?.name || 'Unknown',
+                            match: `${m.homeTeam?.name || 'Home'} vs ${m.awayTeam?.name || 'Away'}`,
+                            time: timeLabel,
+                            rawDate: m.utcDate,
+                            homeTeam: m.homeTeam?.name || 'Home',
+                            awayTeam: m.awayTeam?.name || 'Away',
+                            homeLogo: m.homeTeam?.crest || '',
+                            awayLogo: m.awayTeam?.crest || '',
+                            status: m.status,
+                            homeScore: m.score?.fullTime?.home ?? null,
+                            awayScore: m.score?.fullTime?.away ?? null
+                        };
+                    });
+                }
+            } else {
+                console.warn(`Primary API Error: ${response.status}`);
+            }
+        } catch (e) {
+            console.error("Primary API Failed", e);
         }
 
+        // --- STEP 2: SECONDARY API (TheSportsDB) ---
+        // We fetch missing leagues from here
+        let extraMatches: HighlightMatch[] = [];
+        try {
+            extraMatches = await fetchTheSportsDB(todayStr);
+            console.log(`Fetched ${extraMatches.length} extra matches from Secondary API`);
+        } catch (e) {
+            console.warn("Secondary API Failed completely", e);
+        }
+
+        // --- STEP 3: MERGE ---
+        matches = [...mainMatches, ...extraMatches];
+
+        // Save if we got anything
         if (matches.length > 0) {
             saveToCache(CACHE_KEY, matches);
+        } else {
+             // If both failed, try stale cache
+             const staleCache = getFromCache<HighlightMatch[]>(CACHE_KEY, true);
+             if (staleCache) return staleCache;
         }
     }
 
@@ -225,7 +295,6 @@ export const fetchFootballHighlights = async (): Promise<HighlightsResult> => {
 
             // Keep matches visible for 12 hours after start time
             const matchEndInMs = matchTime + (720 * 60000);
-            
             return now.getTime() < matchEndInMs;
         } catch (e) {
             return true;
@@ -239,6 +308,9 @@ export const fetchFootballHighlights = async (): Promise<HighlightsResult> => {
 
     // --- STRICT FILTERING ---
     let filteredMatches = validMatches.filter(m => {
+        // ALWAYS allow Secondary API matches
+        if (m.id.startsWith('tsdb_')) return true;
+
         const text = (m.match + " " + m.league).toLowerCase();
         
         // Priority Leagues
@@ -249,6 +321,7 @@ export const fetchFootballHighlights = async (): Promise<HighlightsResult> => {
         if (text.includes('primera division') || text.includes('la liga')) return true;
         if (text.includes('champions league') || text.includes('europa') || text.includes('conference')) return true;
         if (text.includes('bundesliga')) return true;
+        if (text.includes('cup') || text.includes('pokal')) return true; // Allow cups
         
         // Local Leagues (Sweden)
         if (text.includes('allsvenskan') || text.includes('superettan') || text.includes('svenska')) return true;
@@ -276,16 +349,16 @@ export const fetchFootballHighlights = async (): Promise<HighlightsResult> => {
         if (text.includes('malmö') || text.includes('malmo') || text.includes('mff')) return 4800000;
 
         // BASE LEAGUE SCORES
-        if (text.includes('serie a') || text.includes('calcio') || text.includes('coppa italia')) score += 50000;
+        if (text.includes('serie a') || text.includes('calcio')) score += 50000;
         else if (text.includes('champions league')) score += 60000; 
-        else if (text.includes('europa') || text.includes('conference')) score += 55000; // Boosted EL/UECL
+        else if (text.includes('europa') || text.includes('conference')) score += 55000; 
         else if (text.includes('premier league') || text.includes('epl')) score += 40000;
         else if (text.includes('primera division') || text.includes('la liga')) score += 30000;
         else if (text.includes('allsvenskan')) score += 35000;
+        else if (text.includes('cup') || text.includes('pokal') || text.includes('coppa')) score += 25000; 
         else score += 10000;
 
         // TEAM BONUSES
-        // Massive boost for Italian teams to outrank PL teams
         const italianCount = topItalianTeams.filter(t => text.includes(t)).length;
         score += (italianCount * 500000); 
 
@@ -305,96 +378,180 @@ export const fetchFootballHighlights = async (): Promise<HighlightsResult> => {
 
   } catch (error) {
     console.error("Failed to fetch highlights:", error);
-    // Attempt fallback to cache one last time
     const fallback = getFromCache<HighlightMatch[]>(CACHE_KEY, true);
     return fallback || [];
   }
 };
 
+// --- POLL LIVE SCORES (SMART DELAY & HYBRID) ---
+
 export const pollLiveScores = async (previousMatches: HighlightMatch[]): Promise<{ events: GoalEvent[], updatedMatches: HighlightMatch[] }> => {
+  // 1. Setup Baseline
   let baselineMatches = previousMatches;
   if (!baselineMatches || baselineMatches.length === 0) {
       const cached = getFromCache<HighlightMatch[]>(CACHE_KEY, true); 
-      if (cached) {
-          baselineMatches = cached;
+      if (cached) baselineMatches = cached;
+  }
+  if (!baselineMatches) return { events: [], updatedMatches: [] };
+
+  const apiKey = FOOTBALL_API_KEY;
+  const headers: HeadersInit = {};
+  if (apiKey) headers['X-Auth-Token'] = apiKey;
+
+  // 2. Poll Sources
+  const primaryLiveMap = new Map<string, any>();
+  let secondaryLiveMap: Map<string, HighlightMatch> | null = null;
+
+  // A. Primary
+  try {
+    const response = await fetch(`https://api.football-data.org/v4/matches?status=IN_PLAY`, { headers });
+    if (response.ok) {
+        const data = await response.json();
+        data.matches?.forEach((m: any) => primaryLiveMap.set(String(m.id), m));
+    }
+  } catch (e) { console.error(e); }
+
+  // B. Secondary (Rate Limited)
+  const now = Date.now();
+  if (now - lastTsdbPoll > 120000) {
+      try {
+          lastTsdbPoll = now;
+          const tsdbMatches = await fetchTheSportsDB(getLocalDateString());
+          secondaryLiveMap = new Map();
+          tsdbMatches.forEach(m => secondaryLiveMap!.set(m.id, m));
+      } catch (e) { console.warn(e); }
+  }
+
+  // 3. Detect Candidates
+  const candidates: string[] = []; // IDs
+  
+  for (const prev of baselineMatches) {
+      // TSDB Matches
+      if (prev.id.startsWith('tsdb_')) {
+          if (secondaryLiveMap && secondaryLiveMap.has(prev.id)) {
+              const fresh = secondaryLiveMap.get(prev.id)!;
+              if (fresh.homeScore !== prev.homeScore || fresh.awayScore !== prev.awayScore) {
+                  candidates.push(prev.id);
+              }
+          }
+          continue;
+      }
+
+      // Primary Matches
+      if (primaryLiveMap.has(prev.id)) {
+          const fresh = primaryLiveMap.get(prev.id);
+          const fHome = fresh.score?.fullTime?.home ?? 0;
+          const fAway = fresh.score?.fullTime?.away ?? 0;
+          const pHome = prev.homeScore ?? 0;
+          const pAway = prev.awayScore ?? 0;
+          
+          if (fHome !== pHome || fAway !== pAway) {
+              candidates.push(prev.id);
+          }
       }
   }
 
-  const apiKey = FOOTBALL_API_KEY;
-  
-  try {
-    const headers: HeadersInit = {};
-    if (apiKey) headers['X-Auth-Token'] = apiKey;
-
-    const response = await fetch(`https://api.football-data.org/v4/matches?status=IN_PLAY`, {
-        headers: headers
-    });
-
-    if (!response.ok) return { events: [], updatedMatches: baselineMatches };
-    
-    const data = await response.json();
-    if (!data.matches) return { events: [], updatedMatches: baselineMatches };
-
-    const goalEvents: GoalEvent[] = [];
-    const newMatchesMap = new Map<string, any>();
-    data.matches.forEach((m: any) => newMatchesMap.set(String(m.id), m));
-
-    const updatedMatches = baselineMatches.map(prevMatch => {
-        const liveMatch = newMatchesMap.get(prevMatch.id);
-        if (!liveMatch) return prevMatch; 
-
-        const newHomeScore = liveMatch.score?.fullTime?.home ?? 0;
-        const newAwayScore = liveMatch.score?.fullTime?.away ?? 0;
-        const oldHomeScore = prevMatch.homeScore ?? 0;
-        const oldAwayScore = prevMatch.awayScore ?? 0;
-
-        if (newHomeScore > oldHomeScore || newAwayScore > oldAwayScore) {
-            goalEvents.push({
-                matchId: prevMatch.id,
-                matchTitle: prevMatch.match,
-                score: `${newHomeScore} - ${newAwayScore}`,
-                scorer: 'Checking...',
-                minute: 'LIVE'
-            });
-        } else if (newHomeScore < oldHomeScore || newAwayScore < oldAwayScore) {
-            goalEvents.push({
-                matchId: prevMatch.id,
-                matchTitle: prevMatch.match,
-                score: `${newHomeScore} - ${newAwayScore}`,
-                scorer: 'Goal Disallowed (VAR)',
-                minute: 'VAR'
-            });
-        }
-
-        return {
-            ...prevMatch,
-            status: liveMatch.status,
-            homeScore: newHomeScore,
-            awayScore: newAwayScore
-        };
-    });
-
-    for (const event of goalEvents) {
-        if (event.minute === 'VAR') continue;
-        try {
-            const detailRes = await fetch(`https://api.football-data.org/v4/matches/${event.matchId}`, {
-                headers: headers
-            });
-            if (detailRes.ok) {
-                const detailData = await detailRes.json();
-                const goals = detailData.goals || [];
-                if (goals.length > 0) {
-                    const lastGoal = goals[goals.length - 1];
-                    event.scorer = lastGoal.scorer?.name || "Goal!";
-                    if (lastGoal.minute) event.minute = `${lastGoal.minute}'`;
-                }
-            }
-        } catch (e) { console.error(e); }
-    }
-
-    return { events: goalEvents, updatedMatches };
-
-  } catch (e) {
-    return { events: [], updatedMatches: baselineMatches };
+  // 4. Smart Delay (15 Seconds)
+  // This allows the API time to correct VAR decisions or update metadata (Scorers)
+  if (candidates.length > 0) {
+      await new Promise(r => setTimeout(r, 15000));
   }
+
+  // 5. Verify & Build Events
+  const goalEvents: GoalEvent[] = [];
+  const verifiedMap = new Map<string, HighlightMatch>();
+
+  for (const cid of candidates) {
+      const prev = baselineMatches.find(m => m.id === cid)!;
+
+      // Secondary (TSDB) - Accept without re-fetch (no detail endpoint available on free tier)
+      if (cid.startsWith('tsdb_')) {
+          const fresh = secondaryLiveMap!.get(cid)!;
+          goalEvents.push({
+              matchId: cid,
+              matchTitle: prev.match,
+              score: `${fresh.homeScore} - ${fresh.awayScore}`,
+              scorer: 'Goal!',
+              minute: fresh.status === 'IN_PLAY' ? 'LIVE' : 'FT'
+          });
+          verifiedMap.set(cid, fresh);
+          continue;
+      }
+
+      // Primary - Re-verify via Detail Endpoint
+      try {
+          const res = await fetch(`https://api.football-data.org/v4/matches/${cid}`, { headers });
+          if (res.ok) {
+              const d = await res.json();
+              const newHome = d.score?.fullTime?.home ?? 0;
+              const newAway = d.score?.fullTime?.away ?? 0;
+              const oldHome = prev.homeScore ?? 0;
+              const oldAway = prev.awayScore ?? 0;
+
+              // Compare vs Baseline (Prevent Zombies / confirm change)
+              if (newHome !== oldHome || newAway !== oldAway) {
+                  let scorer = "Goal!";
+                  let minute = "LIVE";
+                  
+                  // VAR Check: If score decreased, it's a disallowed goal
+                  if (newHome < oldHome || newAway < oldAway) {
+                      scorer = "Goal Disallowed (VAR)";
+                      minute = "VAR";
+                  } else if (d.goals && d.goals.length > 0) {
+                      const last = d.goals[d.goals.length - 1];
+                      if (last.scorer?.name) scorer = last.scorer.name;
+                      if (last.minute) minute = `${last.minute}'`;
+                  }
+
+                  goalEvents.push({
+                      matchId: cid,
+                      matchTitle: prev.match,
+                      score: `${newHome} - ${newAway}`,
+                      scorer: scorer,
+                      minute: minute
+                  });
+
+                  verifiedMap.set(cid, {
+                      ...prev,
+                      status: d.status,
+                      homeScore: newHome,
+                      awayScore: newAway
+                  });
+              } else {
+                  // Reverted/False Alarm - Update status but no event
+                   verifiedMap.set(cid, {
+                      ...prev,
+                      status: d.status,
+                      homeScore: newHome,
+                      awayScore: newAway
+                  });
+              }
+          }
+      } catch(e) { console.error("Verification failed", e); }
+  }
+
+  // 6. Construct Updated List
+  const updatedMatches = baselineMatches.map(prev => {
+      // If we verified it (Confirmed or Reverted), use that exact state
+      if (verifiedMap.has(prev.id)) return verifiedMap.get(prev.id)!;
+      
+      // If it wasn't a candidate, try to update status/time from initial polls (keep clock ticking)
+      if (prev.id.startsWith('tsdb_')) {
+          if (secondaryLiveMap && secondaryLiveMap.has(prev.id)) return secondaryLiveMap.get(prev.id)!;
+      } else {
+          if (primaryLiveMap.has(prev.id)) {
+              const fresh = primaryLiveMap.get(prev.id);
+              return {
+                  ...prev,
+                  status: fresh.status,
+                  homeScore: fresh.score?.fullTime?.home ?? prev.homeScore,
+                  awayScore: fresh.score?.fullTime?.away ?? prev.awayScore
+              };
+          }
+      }
+
+      return prev;
+  });
+
+  return { events: goalEvents, updatedMatches };
 };

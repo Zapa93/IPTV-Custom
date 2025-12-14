@@ -81,6 +81,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ channel, activeCategor
   const lastKnownMatchesRef = useRef<HighlightMatch[]>([]);
   const notificationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Constants
+  const ITEM_HEIGHT = 65; 
+  const LIST_HEIGHT = 900; 
+  const RENDER_BUFFER = 80; 
+
   // Load cache for tracking
   useEffect(() => {
     const cached = getFromCache<HighlightMatch[]>('football_data_highlights_v2');
@@ -105,9 +110,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ channel, activeCategor
         }
         setPrevChannelId(channel.id);
      }
-     // Reset Stream Index when channel changes
+     // Reset states when channel changes
      setActiveStreamIndex(0);
      setStreamSwitchToast(null);
+     setIsListOpen(false); // Ensure list is closed on channel switch
   }
 
   // Update EPG info periodically
@@ -294,12 +300,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ channel, activeCategor
   const stallTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hlsRef = useRef<any>(null);
 
-  // Virtualization Constants
-  const ITEM_HEIGHT = 65; 
-  const LIST_HEIGHT = 900; 
-  const RENDER_BUFFER = 80; 
-
-  // Auto-scroll logic
+  // Auto-scroll logic (For when navigating inside the list)
   useEffect(() => {
     if (isListOpen && listContainerRef.current && focusArea === 'list') {
       const currentScroll = listContainerRef.current.scrollTop;
@@ -460,6 +461,25 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ channel, activeCategor
       }, 2000);
   };
 
+  // Helper to open list at correct position (Center selection)
+  const openChannelList = () => {
+      const list = currentChannelListRef.current;
+      const currentId = channelRef.current.id;
+      const idx = list.findIndex(c => c.id === currentId);
+      const targetIndex = idx !== -1 ? idx : 0;
+      
+      setSelectedIndex(targetIndex);
+      setViewMode('channels');
+      setFocusArea('list');
+      
+      // Pre-calculate scroll position to ensure virtual list renders correct range immediately
+      // This prevents the list from showing the top items first
+      const targetScroll = Math.max(0, targetIndex * ITEM_HEIGHT - LIST_HEIGHT / 2 + ITEM_HEIGHT / 2);
+      setScrollTop(targetScroll);
+      
+      setIsListOpen(true);
+  };
+
   // Input Handling
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -580,9 +600,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ channel, activeCategor
       } else if (isUp) {
         e.preventDefault(); e.stopPropagation();
         if (!currentIsListOpen) {
-             setIsListOpen(true);
-             setViewMode('channels');
-             setSelectedIndex(playingIndex !== -1 ? playingIndex : 0);
+             openChannelList();
         }
         else if (currentFocus === 'sidebar') {
              setSelectedIndex(prev => Math.max(0, prev - 1));
@@ -593,9 +611,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ channel, activeCategor
       } else if (isDown) {
         e.preventDefault(); e.stopPropagation();
         if (!currentIsListOpen) {
-            setIsListOpen(true);
-            setViewMode('channels');
-            setSelectedIndex(playingIndex !== -1 ? playingIndex : 0);
+            openChannelList();
         }
         else if (currentFocus === 'sidebar') {
             setSelectedIndex(prev => Math.min(maxSidebarIndex, prev + 1));
@@ -649,10 +665,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ channel, activeCategor
                else onChannelSelect(target);
           }
         } else {
-          setIsListOpen(true);
-          setViewMode('channels');
-          setViewMode('channels');
-          setSelectedIndex(playingIndex !== -1 ? playingIndex : 0);
+          openChannelList();
         }
       }
     };
@@ -759,11 +772,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ channel, activeCategor
         playsInline 
         onClick={() => {
            if (!isListOpen && !showTeletext) {
-               setIsListOpen(true);
-               setViewMode('channels');
-               // Set index to current channel
-               const idx = currentChannelList.findIndex(c => c.id === channel.id);
-               setSelectedIndex(idx !== -1 ? idx : 0);
+               openChannelList();
            }
         }}
       />
@@ -778,8 +787,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ channel, activeCategor
         className={`absolute top-10 inset-x-0 flex justify-center pointer-events-none transition-opacity duration-300 z-[70]
           ${streamSwitchToast ? 'opacity-100' : 'opacity-0'}`}
       >
-          <div className="bg-black/60 backdrop-blur-md px-6 py-2 rounded-full border border-white/20">
-              <span className="text-xl font-bold text-white uppercase tracking-wider">{streamSwitchToast}</span>
+          <div className="bg-black/60 backdrop-blur-md px-10 py-4 rounded-full border-2 border-white/20">
+              <span className="text-4xl font-black text-white uppercase tracking-widest">{streamSwitchToast}</span>
           </div>
       </div>
 
@@ -912,14 +921,14 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ channel, activeCategor
                    
                    {/* Resolution Badge */}
                    {resolution && (
-                       <div className="px-2 py-1 rounded bg-white/10 border border-white/10 text-xs font-mono text-gray-300 font-bold">
+                       <div className="px-3 py-1.5 rounded-md bg-white/20 border border-white/30 text-sm font-mono text-white font-bold backdrop-blur-md">
                            {resolution}
                        </div>
                    )}
 
-                   {/* Current Quality Badge */}
+                   {/* Current Quality Badge - Made Bigger */}
                    {channel.streams && channel.streams.length > 1 && (
-                       <div className="px-2 py-1 rounded bg-purple-600/50 border border-purple-400/30 text-xs font-bold text-white uppercase tracking-wide">
+                       <div className="px-4 py-2 rounded-lg bg-purple-600 border-2 border-purple-400 text-xl font-black text-white uppercase tracking-widest shadow-[0_0_15px_rgba(168,85,247,0.5)]">
                            {channel.streams[activeStreamIndex]?.quality || 'Multi-Stream'}
                        </div>
                    )}
@@ -942,7 +951,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ channel, activeCategor
                            >
                                <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
                                    <path d="M12,2C6.48,2,2,6.48,2,12s4.48,10,10,10s10-4.48,10-10S17.52,2,12,2z M12,20c-4.41,0-8-3.59-8-8s3.59-8,8-8s8,3.59,8,8 S16.41,20,12,20z M17,13h-4v4h-2v-4H7v-2h4V7h2v4h4V13z" opacity="0"/> 
-                                   <path d="M21.6 10.4c-.1-.7-.3-1.4-.5-2.1-.3-.6-.6-1.2-1-1.7-.4-.5-.9-1-1.4-1.5s-1-1-1.6-1.3c-.6-.4-1.2-.7-1.8-1C14.6 2.6 13.9 2.5 13.2 2.4c-.1 0-.1 0-.2 0h-2c-.7 0-1.4.2-2 .4-.7.3-1.3.6-1.9 1-.5.4-1.1.8-1.5 1.3-.5.5-1 1-1.3 1.6-.4.6-.7 1.2-1 1.8-.2.7-.4 1.4-.5 2.1 0 .1 0 .1 0 .2v2c.1.7.2 1.4.4 2 .3.7.6 1.3 1 1.9.4.5.8 1.1 1.3 1.5.5.5 1 1 1.6 1.3.6.4 1.2.7 1.9 1 .7.2 1.3.4 2 .4h2c.7 0 1.4-.2 2-.4.7-.3 1.3-.6 1.9-1 .5-.4 1.1-.8 1.5-1.3.5-.5 1-1 1.3-1.6.4-.6.7-1.2 1-1.9.2-.6.4-1.3.4-2 0-.1 0-.1 0-.2v-2c0-.1 0-.2 0-.3zM12 4.1c.9 0 1.8.2 2.6.5l-2.6 4.3-2.6-4.3c.8-.3 1.7-.5 2.6-.5zm-5.7 3c.4-.6 1-1.1 1.5-1.5l2.6 4.3-3.6 2.6c-.2-.6-.4-1.2-.5-1.9-.1-.6-.1-1.2 0-1.8.1-.6.2-1.1.4-1.7zM4.1 12c0-.9.2-1.8.5-2.6l4.3 2.6-4.3 2.6c-.3-.8-.5-1.7-.5-2.6zm3 5.7c-.2-.6-.3-1.2-.4-1.8-.1-.6 0-1.2.1-1.8l3.6 2.6-2.6 4.3c-.6-.4-1.1-1-1.5-1.5-.4-.6-.7-1.2-.9-1.8zm4.9 2.2c-.9 0-1.8-.2-2.6-.5l2.6-4.3 2.6 4.3c-.8.3-1.7.5-2.6.5zm5.7-3l-2.6-4.3 3.6-2.6c.2.6.4 1.2.5 1.9.1.6.1 1.2 0 1.8-.1.6-.2 1.1-.4 1.7-.4.6-.7 1.2-1.1 1.5zm1.3-4.9c0 .9-.2 1.8-.5 2.6l-4.3-2.6 4.3-2.6c.3.8.5 1.7.5 2.6z"/>
+                                   <path d="M21.6 10.4c-.1-.7-.3-1.4-.5-2.1-.3-.6-.6-1.2-1-1.7-.4-.5-.9-1-1.4-1.5s-1-1-1.6-1.3c-.6-.4-1.2-.7-1.8-1C14.6 2.6 13.9 2.5 13.2 2.4c-.1 0-.1 0-.2 0h-2c-.7 0-1.4.2-2 .4-.7.3-1.3.6-1.9 1-.5.4-1.1.8-1.5 1.3-.5.5-1 1-1.3 1.6-.4.6-.7 1.2-1 1.8-.2.7-.4 1.4-.5 2.1 0 .1 0 .1 0 .2v2c.1.7.2 1.4.4 2 .3.7.6 1.3 1 1.9.4.5.8 1.1 1.3 1.5.5.5 1 1 1.6 1.3.6.4 1.2.7 1.9 1 .7.2 1.3.4 2 .4h2c.7 0 1.4-.2 2-.4.7-.3 1.3-.6 1.9-1 .5-.4 1.1-.8 1.5-1.3.5-.5 1 1 1.3 1.6.4-.6.7-1.2-1.9.2-.6.4-1.3.4-2 0-.1 0-.1 0-.2v-2c0-.1 0-.2 0-.3zM12 4.1c.9 0 1.8.2 2.6.5l-2.6 4.3-2.6-4.3c.8-.3 1.7-.5 2.6-.5zm-5.7 3c.4-.6 1-1.1 1.5-1.5l2.6 4.3-3.6 2.6c-.2-.6-.4-1.2-.5-1.9-.1-.6-.1-1.2 0-1.8.1-.6.2-1.1.4-1.7zM4.1 12c0-.9.2-1.8.5-2.6l4.3 2.6-4.3 2.6c-.3-.8-.5-1.7-.5-2.6zm3 5.7c-.2-.6-.3-1.2-.4-1.8-.1-.6 0-1.2.1-1.8l3.6 2.6-2.6 4.3c-.6-.4-1.1-1-1.5-1.5-.4-.6-.7-1.2-.9-1.8zm4.9 2.2c-.9 0-1.8-.2-2.6-.5l2.6-4.3 2.6 4.3c-.8.3-1.7.5-2.6.5zm5.7-3l-2.6-4.3 3.6-2.6c.2.6.4 1.2.5 1.9.1.6.1 1.2 0 1.8-.1.6-.2 1.1-.4 1.7-.4.6-.7 1.2-1.1 1.5zm1.3-4.9c0 .9-.2 1.8-.5 2.6l-4.3-2.6 4.3-2.6c.3.8.5 1.7.5 2.6z"/>
                                </svg>
                            </div>
                            
