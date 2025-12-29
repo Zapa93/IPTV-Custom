@@ -4,7 +4,7 @@ import { FOOTBALL_API_KEY } from '../constants';
 
 export type HighlightsResult = HighlightMatch[];
 
-const CACHE_KEY = 'football_data_highlights_v5'; // Bumped version for Hybrid API
+const CACHE_KEY = 'football_data_highlights_v6'; // Bumped version for API-Football
 
 // --- CACHING UTILITIES ---
 
@@ -208,39 +208,59 @@ export const fetchFootballHighlights = async (): Promise<HighlightsResult> => {
         
         console.log(`Fetching matches for ${todayStr}...`);
         
-        // --- STEP 1: PRIMARY API (football-data.org) ---
+        // --- STEP 1: PRIMARY API (API-Football) ---
         let mainMatches: HighlightMatch[] = [];
         try {
             const headers: HeadersInit = {};
-            if (apiKey) headers['X-Auth-Token'] = apiKey;
+            if (apiKey) headers['x-apisports-key'] = apiKey;
 
-            const response = await fetch(`https://api.football-data.org/v4/matches?dateFrom=${todayStr}&dateTo=${tomorrowStr}`, {
+            // Fetching matches for today and tomorrow
+            // Endpoint: https://v3.football.api-sports.io/fixtures
+            const response = await fetch(`https://v3.football.api-sports.io/fixtures?from=${todayStr}&to=${tomorrowStr}`, {
                 headers: headers
             });
 
             if (response.ok) {
                 const data = await response.json();
-                if (data.matches && Array.isArray(data.matches)) {
-                    mainMatches = data.matches.map((m: any) => {
-                        const date = new Date(m.utcDate);
+                if (data.response && Array.isArray(data.response)) {
+                    mainMatches = data.response.map((item: any) => {
+                        const f = item.fixture;
+                        const l = item.league;
+                        const t = item.teams;
+                        const g = item.goals;
+                        
+                        const date = new Date(f.date);
                         const timeStr = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
                         const matchDay = date.getDate();
                         const currentDay = new Date().getDate();
                         const timeLabel = matchDay !== currentDay ? `Tom ${timeStr}` : timeStr;
 
+                        // Map Status from API-Football to internal types
+                        let status: HighlightMatch['status'] = 'SCHEDULED';
+                        const s = f.status.short; // NS, 1H, 2H, HT, FT, ET, PEN, BT, P, SUSP, INT, PST, CANC, ABD, AWD, WO
+                        
+                        if (['1H', '2H', 'ET', 'BT', 'P', 'LIVE'].includes(s)) status = 'IN_PLAY';
+                        else if (s === 'HT') status = 'PAUSED';
+                        else if (['FT', 'AET', 'PEN'].includes(s)) status = 'FINISHED';
+                        else if (s === 'PST') status = 'POSTPONED';
+                        else if (s === 'CANC') status = 'CANCELLED';
+                        else if (s === 'ABD') status = 'SUSPENDED';
+                        else if (s === 'AWD' || s === 'WO') status = 'AWARDED';
+                        else if (['NS', 'TBD'].includes(s)) status = 'SCHEDULED';
+
                         return {
-                            id: String(m.id),
-                            league: m.competition?.name || 'Unknown',
-                            match: `${m.homeTeam?.name || 'Home'} vs ${m.awayTeam?.name || 'Away'}`,
+                            id: String(f.id),
+                            league: l.name || 'Unknown',
+                            match: `${t.home.name} vs ${t.away.name}`,
                             time: timeLabel,
-                            rawDate: m.utcDate,
-                            homeTeam: m.homeTeam?.name || 'Home',
-                            awayTeam: m.awayTeam?.name || 'Away',
-                            homeLogo: m.homeTeam?.crest || '',
-                            awayLogo: m.awayTeam?.crest || '',
-                            status: m.status,
-                            homeScore: m.score?.fullTime?.home ?? null,
-                            awayScore: m.score?.fullTime?.away ?? null
+                            rawDate: f.date,
+                            homeTeam: t.home.name,
+                            awayTeam: t.away.name,
+                            homeLogo: t.home.logo || '',
+                            awayLogo: t.away.logo || '',
+                            status: status,
+                            homeScore: g.home,
+                            awayScore: g.away
                         };
                     });
                 }
@@ -252,7 +272,7 @@ export const fetchFootballHighlights = async (): Promise<HighlightsResult> => {
         }
 
         // --- STEP 2: SECONDARY API (TheSportsDB) ---
-        // We fetch missing leagues from here
+        // We fetch missing leagues from here (keeping original logic)
         let extraMatches: HighlightMatch[] = [];
         try {
             extraMatches = await fetchTheSportsDB(todayStr);
