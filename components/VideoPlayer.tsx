@@ -1,17 +1,16 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Channel, EPGData, EPGProgram, ChannelGroup, Category, GoalEvent, HighlightMatch } from '../types';
+import { Channel, EPGData, EPGProgram, ChannelGroup, Category } from '../types';
 import { DEFAULT_LOGO } from '../constants';
-import { getCurrentProgram, getNextProgram, findLocalMatches } from '../services/epgService';
+import { getCurrentProgram, getNextProgram } from '../services/epgService';
 import { PlayerChannelItem, PlayerGroupItem } from './ListItems';
 import { TeletextViewer } from './TeletextViewer';
-import { pollLiveScores, getFromCache } from '../services/geminiService';
 
 interface VideoPlayerProps {
   channel: Channel;
   activeCategory: Category;
   allChannels: Channel[]; // Default list (if needed)
-  globalChannels: Channel[]; // For Global Search on Goal Alerts
+  globalChannels: Channel[]; // For Global Search on Goal Alerts (Legacy prop, might be used elsewhere)
   playlist: ChannelGroup[]; // All groups for switching
   epgData: EPGData;
   onClose: () => void;
@@ -21,21 +20,6 @@ interface VideoPlayerProps {
 declare global {
   interface Window { Hls: any; }
 }
-
-// Helper to check if the goal alert matches the current program (Spoiler Protection)
-const isSameMatch = (epgTitle: string | undefined, alertTitle: string): boolean => {
-    if (!epgTitle || !alertTitle) return false;
-    const normEpg = epgTitle.toLowerCase();
-    const normAlert = alertTitle.toLowerCase();
-    
-    // Split alert title into team names (handling "vs" or "v")
-    const teams = normAlert.split(/\s+(?:vs|v)\s+/);
-    
-    if (teams.length < 2) return false;
-    
-    // Check if ALL identified teams in the alert exist in the EPG title
-    return teams.every(team => normEpg.includes(team.trim()));
-};
 
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({ channel, activeCategory, allChannels, globalChannels, playlist, epgData, onClose, onChannelSelect }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -73,26 +57,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ channel, activeCategor
       return playlist.find(g => g.title === channel.group) || null;
   });
 
-  // Goal Alert State
-  const [isGoalAlertEnabled, setIsGoalAlertEnabled] = useState(false);
-  const [notificationQueue, setNotificationQueue] = useState<GoalEvent[]>([]);
-  const [currentNotification, setCurrentNotification] = useState<GoalEvent | null>(null);
-  
-  const lastKnownMatchesRef = useRef<HighlightMatch[]>([]);
-  const notificationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   // Constants
   const ITEM_HEIGHT = 65; 
   const LIST_HEIGHT = 900; 
   const RENDER_BUFFER = 80; 
-
-  // Load cache for tracking
-  useEffect(() => {
-    const cached = getFromCache<HighlightMatch[]>('football_data_highlights_v5');
-    if (cached) {
-        lastKnownMatchesRef.current = cached;
-    }
-  }, []);
 
   // Derived State Sync
   if (channel.id !== prevChannelId) {
@@ -145,129 +113,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ channel, activeCategor
      return () => clearInterval(interval);
   }, [channel, epgData]);
 
-  // Goal Alert Polling
-  const playNotificationSound = useCallback(() => {
-    try {
-        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-        if (!AudioContextClass) return;
-
-        const ctx = new AudioContextClass();
-        const oscillator = ctx.createOscillator();
-        const gainNode = ctx.createGain();
-
-        // 880Hz Sine Wave (A5 note)
-        oscillator.type = 'sine';
-        oscillator.frequency.setValueAtTime(880, ctx.currentTime);
-
-        // Volume Envelope: Start at 0.2 and drop to near zero quickly
-        gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-
-        // Connect nodes
-        oscillator.connect(gainNode);
-        gainNode.connect(ctx.destination);
-
-        // Play sound
-        oscillator.start();
-        oscillator.stop(ctx.currentTime + 0.5);
-    } catch (e) {
-        console.error("Failed to play notification sound", e);
-    }
-  }, []);
-
-  // 1. Polling Effect (Adds to Queue)
-  useEffect(() => {
-    // Enable goal alerts for any category if enabled (supporting Kanaler as requested)
-    if (!isGoalAlertEnabled) {
-        setCurrentNotification(null);
-        setNotificationQueue([]);
-        if (notificationTimeoutRef.current) clearTimeout(notificationTimeoutRef.current);
-        return;
-    }
-
-    const poll = async () => {
-        const { events, updatedMatches } = await pollLiveScores(lastKnownMatchesRef.current);
-        lastKnownMatchesRef.current = updatedMatches;
-
-        if (events.length > 0) {
-            // Filter out events if they match the currently watching program (Spoiler Protection)
-            const filteredEvents = events.filter(event => 
-                !isSameMatch(currentProgram?.title, event.matchTitle)
-            );
-
-            // Enrich events with channel to watch if available
-            const enrichedEvents = filteredEvents.map(event => {
-                const searchList = globalChannels && globalChannels.length > 0 ? globalChannels : allChannels;
-                const found = findLocalMatches(event.matchTitle, searchList, epgData);
-                // If we found a live match channel, attach it
-                if (found.length > 0 && found[0].isLive) {
-                    return { ...event, channelToWatch: found[0].channel };
-                }
-                return event;
-            });
-
-            // Append all new (filtered) events to the queue
-            if (enrichedEvents.length > 0) {
-                setNotificationQueue(prev => [...prev, ...enrichedEvents]);
-            }
-        }
-    };
-
-    // Initial poll
-    poll();
-    
-    // Poll every 60 seconds
-    const interval = setInterval(poll, 60000);
-    return () => clearInterval(interval);
-  }, [isGoalAlertEnabled, globalChannels, allChannels, epgData, currentProgram]);
-
-  // 2. Queue Processor Effect (Displays one at a time)
-  useEffect(() => {
-      // If a notification is currently showing, wait for it to finish.
-      if (currentNotification) return;
-
-      // If the queue is empty, do nothing.
-      if (notificationQueue.length === 0) return;
-
-      // Get the next event
-      const nextEvent = notificationQueue[0];
-
-      // Remove it from the queue and set as current
-      setNotificationQueue(prev => prev.slice(1));
-      setCurrentNotification(nextEvent);
-
-      // Play sound
-      playNotificationSound();
-
-      // Set a timer to clear the current notification after 8 seconds
-      if (notificationTimeoutRef.current) clearTimeout(notificationTimeoutRef.current);
-      notificationTimeoutRef.current = setTimeout(() => {
-          setCurrentNotification(null);
-      }, 8000);
-
-  }, [notificationQueue, currentNotification, playNotificationSound]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-      return () => {
-          if (notificationTimeoutRef.current) clearTimeout(notificationTimeoutRef.current);
-      };
-  }, []);
-
-  const triggerTestNotification = useCallback(() => {
-    const testEvent: GoalEvent = {
-        matchId: `test-${Date.now()}`,
-        matchTitle: 'Test Match: Sweden vs Denmark',
-        score: '2 - 1',
-        scorer: 'Isak',
-        minute: '88\''
-        // channelToWatch can be mocked if we want to test that button too, but handled via generic flow
-    };
-    
-    // Add to queue
-    setNotificationQueue(prev => [...prev, testEvent]);
-  }, []);
-
   // Refs for Event Listeners
   const channelRef = useRef(channel);
   const currentChannelListRef = useRef(currentChannelList);
@@ -280,9 +125,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ channel, activeCategor
   const showTeletextRef = useRef(showTeletext);
   const activeStreamIndexRef = useRef(activeStreamIndex);
   
-  // Ref for current notification to be accessible in keydown
-  const currentNotificationRef = useRef(currentNotification);
-  
   useEffect(() => { channelRef.current = channel; }, [channel]);
   useEffect(() => { currentChannelListRef.current = currentChannelList; }, [currentChannelList]);
   useEffect(() => { playlistRef.current = playlist; }, [playlist]);
@@ -292,7 +134,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ channel, activeCategor
   useEffect(() => { focusAreaRef.current = focusArea; }, [focusArea]);
   useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
   useEffect(() => { showTeletextRef.current = showTeletext; }, [showTeletext]);
-  useEffect(() => { currentNotificationRef.current = currentNotification; }, [currentNotification]);
   useEffect(() => { activeStreamIndexRef.current = activeStreamIndex; }, [activeStreamIndex]);
 
   const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -499,17 +340,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ channel, activeCategor
 
       const isEnter = e.key === 'Enter';
       const currentIsListOpen = isListOpenRef.current;
-      const notif = currentNotificationRef.current;
-
-      // --- GOAL ALERT SHORTCUT (WATCH NOW) ---
-      if (isEnter && !currentIsListOpen && notif && notif.channelToWatch) {
-          e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
-          // Switch to channel immediately
-          onChannelSelect(notif.channelToWatch);
-          // We can optionally clear the notification or let it stay briefly. 
-          // Since we switch channel, the player re-mounts and clears state anyway.
-          return;
-      }
 
       resetControls();
       
@@ -792,45 +622,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ channel, activeCategor
           </div>
       </div>
 
-      {/* GOAL NOTIFICATION POPUP */}
-      <div 
-        className={`absolute top-8 right-8 z-[60] transition-all duration-500 ease-out transform
-          ${currentNotification ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}`}
-      >
-        {currentNotification && (
-            <div className="bg-black/80 backdrop-blur-md border border-white/20 rounded-2xl p-4 shadow-2xl flex flex-col gap-1 w-80">
-                <div className="flex items-center justify-between mb-2">
-                    <span className="text-2xl font-black text-green-400 animate-pulse uppercase tracking-wider">Goal!</span>
-                    <span className="text-white font-bold bg-white/20 px-2 rounded">{currentNotification.minute}</span>
-                </div>
-                <div className="text-white text-lg font-bold leading-tight">{currentNotification.matchTitle}</div>
-                <div className="text-3xl text-white font-mono font-bold my-1 tracking-widest">{currentNotification.score}</div>
-                <div className="text-gray-300 text-sm mt-1">{currentNotification.scorer}</div>
-                
-                {/* Watch Now Button */}
-                {currentNotification.channelToWatch && (
-                    <button
-                        className="mt-3 bg-white text-black font-bold py-1.5 px-4 rounded-lg hover:bg-gray-200 transition-colors w-full uppercase tracking-wider text-sm flex items-center justify-center gap-2 shadow-lg"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onChannelSelect(currentNotification.channelToWatch!);
-                        }}
-                    >
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                        Watch Now
-                    </button>
-                )}
-
-                {/* Optional Queue Indicator if multiple events are pending */}
-                {notificationQueue.length > 0 && (
-                    <div className="mt-2 text-xs text-gray-500 text-right">
-                        +{notificationQueue.length} more
-                    </div>
-                )}
-            </div>
-        )}
-      </div>
-
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
           <div className="flex flex-col items-center justify-center bg-black/60 p-8 rounded-3xl border border-white/10">
@@ -930,46 +721,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ channel, activeCategor
                    {channel.streams && channel.streams.length > 1 && (
                        <div className="px-4 py-2 rounded-lg bg-purple-600 border-2 border-purple-400 text-xl font-black text-white uppercase tracking-widest shadow-[0_0_15px_rgba(168,85,247,0.5)]">
                            {channel.streams[activeStreamIndex]?.quality || 'Multi-Stream'}
-                       </div>
-                   )}
-                   
-                   {/* GOAL ALERT CONTROLS */}
-                   {(activeCategory === Category.FOTBOLL || activeCategory === Category.KANALER) && (
-                       <div className="flex items-center gap-4 ml-4">
-                           {/* Main Toggle */}
-                           <div 
-                               className={`pointer-events-auto cursor-pointer p-3 rounded-full transition-all duration-300
-                               ${isGoalAlertEnabled 
-                                   ? 'bg-green-600/20 text-green-400 ring-2 ring-green-500 shadow-[0_0_15px_rgba(34,197,94,0.3)] opacity-100' 
-                                   : 'bg-gray-800 text-gray-400 border-2 border-gray-600 opacity-100 hover:bg-gray-700 hover:text-white'
-                               }`}
-                               onClick={(e) => {
-                                   e.stopPropagation();
-                                   setIsGoalAlertEnabled(prev => !prev);
-                               }}
-                               title={isGoalAlertEnabled ? "Disable Goal Alerts" : "Enable Goal Alerts"}
-                           >
-                               <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24">
-                                   <path d="M12,2C6.48,2,2,6.48,2,12s4.48,10,10,10s10-4.48,10-10S17.52,2,12,2z M12,20c-4.41,0-8-3.59-8-8s3.59-8,8-8s8,3.59,8,8 S16.41,20,12,20z M17,13h-4v4h-2v-4H7v-2h4V7h2v4h4V13z" opacity="0"/> 
-                                   <path d="M21.6 10.4c-.1-.7-.3-1.4-.5-2.1-.3-.6-.6-1.2-1-1.7-.4-.5-.9-1-1.4-1.5s-1-1-1.6-1.3c-.6-.4-1.2-.7-1.8-1C14.6 2.6 13.9 2.5 13.2 2.4c-.1 0-.1 0-.2 0h-2c-.7 0-1.4.2-2 .4-.7.3-1.3.6-1.9 1-.5.4-1.1.8-1.5 1.3-.5.5-1 1-1.3 1.6-.4.6-.7 1.2-1 1.8-.2.7-.4 1.4-.5 2.1 0 .1 0 .1 0 .2v2c.1.7.2 1.4.4 2 .3.7.6 1.3 1 1.9.4.5.8 1.1 1.3 1.5.5.5 1 1 1.6 1.3.6.4 1.2.7 1.9 1 .7.2 1.3.4 2 .4h2c.7 0 1.4-.2 2-.4.7-.3 1.3-.6 1.9-1 .5-.4 1.1-.8 1.5-1.3.5-.5 1-1 1.3-1.6.4-.6.7-1.2 1-1.9.2-.6.4-1.3.4-2 0-.1 0-.1 0-.2v-2c0-.1 0-.2 0-.3zM12 4.1c.9 0 1.8.2 2.6.5l-2.6 4.3-2.6-4.3c.8-.3 1.7-.5 2.6-.5zm-5.7 3c.4-.6 1-1.1 1.5-1.5l2.6 4.3-3.6 2.6c-.2-.6-.4-1.2-.5-1.9-.1-.6-.1-1.2 0-1.8.1-.6.2-1.1.4-1.7zM4.1 12c0-.9.2-1.8.5-2.6l4.3 2.6-4.3 2.6c-.3-.8-.5-1.7-.5-2.6zm3 5.7c-.2-.6-.3-1.2-.4-1.8-.1-.6 0-1.2.1-1.8l3.6 2.6-2.6 4.3c-.6-.4-1.1-1-1.5-1.5-.4-.6-.7-1.2-.9-1.8zm4.9 2.2c-.9 0-1.8-.2-2.6-.5l2.6-4.3 2.6 4.3c-.8.3-1.7.5-2.6.5zm5.7-3l-2.6-4.3 3.6-2.6c.2.6.4 1.2.5 1.9.1.6.1 1.2 0 1.8-.1.6-.2 1.1-.4 1.7-.4.6-.7 1.2-1.1 1.5zm1.3-4.9c0 .9-.2 1.8-.5 2.6l-4.3-2.6 4.3-2.6c.3.8.5 1.7.5 2.6z"/>
-                               </svg>
-                           </div>
-                           
-                           {/* Test Button */}
-                           {isGoalAlertEnabled && (
-                               <div
-                                   className="pointer-events-auto cursor-pointer p-2 rounded-full bg-white/10 text-gray-300 hover:bg-white/20 hover:text-white transition-all"
-                                   onClick={(e) => {
-                                       e.stopPropagation();
-                                       triggerTestNotification();
-                                   }}
-                                   title="Test Notification"
-                               >
-                                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                                   </svg>
-                               </div>
-                           )}
                        </div>
                    )}
                </div>

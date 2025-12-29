@@ -1,5 +1,4 @@
 
-
 export interface StreamVariant {
   quality: string;
   url: string;
@@ -52,15 +51,6 @@ export interface HighlightMatch {
   status: 'SCHEDULED' | 'TIMED' | 'IN_PLAY' | 'PAUSED' | 'FINISHED' | 'SUSPENDED' | 'POSTPONED' | 'CANCELLED' | 'AWARDED';
   homeScore: number | null;
   awayScore: number | null;
-}
-
-export interface GoalEvent {
-  matchId: string;
-  matchTitle: string;
-  score: string;
-  scorer: string;
-  minute: string;
-  channelToWatch?: Channel;
 }
 
 export interface LocalMatchChannel {
